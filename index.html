@@ -223,6 +223,51 @@ input,select{font-family:'Inter',sans-serif;}
 .empty-icon{font-size:34px;margin-bottom:8px;}
 .empty-text{font-size:14px;font-weight:500;}
 </style>
+<link rel="apple-touch-icon" id="appIcon" href="">
+<script>
+(function(){
+  var c=document.createElement('canvas');
+  c.width=180;c.height=180;
+  var ctx=c.getContext('2d');
+  // Background white
+  ctx.fillStyle='#ffffff';
+  roundRect(ctx,0,0,180,180,40);
+  ctx.fill();
+  // Inner blue-light bg
+  ctx.fillStyle='#eff4ff';
+  roundRect(ctx,14,14,152,152,28);
+  ctx.fill();
+  // Bars
+  var bars=[
+    {x:23,y:117,h:38,a:0.22},
+    {x:60,y:95,h:62,a:0.48},
+    {x:97,y:68,h:89,a:0.74},
+    {x:134,y:45,h:112,a:1}
+  ];
+  bars.forEach(function(b){
+    ctx.globalAlpha=b.a;
+    ctx.fillStyle='#2563eb';
+    roundRect(ctx,b.x,b.y,25,b.h,5);
+    ctx.fill();
+  });
+  ctx.globalAlpha=1;
+  var url=c.toDataURL('image/png');
+  document.getElementById('appIcon').href=url;
+  function roundRect(ctx,x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.lineTo(x+w-r,y);
+    ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+    ctx.lineTo(x+w,y+h-r);
+    ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    ctx.lineTo(x+r,y+h);
+    ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+    ctx.lineTo(x,y+r);
+    ctx.quadraticCurveTo(x,y,x+r,y);
+    ctx.closePath();
+  }
+})();
+</script>
 </head>
 <body>
 
