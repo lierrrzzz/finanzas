@@ -285,6 +285,7 @@ input,select{font-family:'Inter',sans-serif;}
       <button class="drawer-item" onclick="navTo('Gestionar')"><div class="drawer-icon">⚙️</div>Gestionar Movimientos</button>
       <button class="drawer-item" onclick="navTo('Historial')"><div class="drawer-icon">📋</div>Historial</button>
       <button class="drawer-item" onclick="navTo('Prevision')"><div class="drawer-icon">📈</div>Previsión</button>
+      <button class="drawer-item" onclick="navTo('Notas')"><div class="drawer-icon">📝</div>Notas</button>
       <button class="drawer-item" onclick="navTo('Ajustes')"><div class="drawer-icon">🔧</div>Ajustes</button>
     </div>
   </div>
@@ -507,6 +508,28 @@ input,select{font-family:'Inter',sans-serif;}
   <div id="prevContent"></div>
 </div>
 
+<!-- PAGE: NOTAS -->
+<div class="page" id="pageNotas">
+  <div class="topbar">
+    <button class="icon-btn" onclick="goBack()">←</button>
+    <div class="topbar-title">Notas</div>
+    <button class="edit-btn" id="notasSaveBtn" onclick="saveNotas()" style="background:var(--green-light);color:var(--green);padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;">Guardar</button>
+  </div>
+  <div style="padding:16px 20px;">
+    <div class="fg">
+      <label class="fl">Capital esperado</label>
+      <input class="fi" type="number" id="notasCapital" placeholder="0.00" inputmode="decimal" step="0.01">
+    </div>
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:10px;margin-top:8px;">Distribución por pocket</div>
+    <div id="notasPockets"></div>
+    <button onclick="renderNotasPockets()" style="width:100%;padding:11px;background:var(--bg);border:1.5px dashed var(--border);border-radius:var(--radius-sm);font-size:13px;color:var(--muted);font-weight:600;margin-top:4px;">+ Añadir pocket</button>
+  </div>
+  <div style="padding:0 20px 16px;">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:10px;">Notas libres</div>
+    <textarea class="fi" id="notasText" placeholder="Escribe aquí tus notas..." style="min-height:140px;resize:none;line-height:1.6;"></textarea>
+  </div>
+</div>
+
 <!-- PAGE: AJUSTES -->
 <div class="page" id="pageAjustes">
   <div class="topbar">
@@ -615,6 +638,7 @@ function navTo(id){
   if(id==='Gestionar'){renderGestion();}
   if(id==='Historial'){renderHistorial();}
   if(id==='Prevision'){renderPrevSelect();}
+  if(id==='Notas'){initNotas();}
   if(id==='Ajustes'){renderAjustes();}
 }
 
@@ -731,7 +755,7 @@ function saveTransfer(){
   const toP=S.pockets.find(p=>p.id===to);
   const desc='Transfer'+(fromP?' de '+fromP.name:'')+(toP?' a '+toP.name:'');
   const date=document.getElementById('trDate').value||today();
-  S.transactions.push({id:uid(),type:'transfer',amount:amt,desc,date,pocket:to,paid:false});
+  S.transactions.push({id:uid(),type:'transfer',amount:amt,desc,date,pocket:to,fromPocket:from,paid:false});
   save();closeModal('mTransfer');renderDashboard();
 }
 
@@ -938,13 +962,25 @@ function pocketMultForMonth(m){
 // ─── POCKET BALANCE ───────────────────────────────────────────────────────────
 function pocketBalance(p){
   // Saldo inicial ya incluye todo lo anterior.
-  // Solo sumamos el mes actual si está marcado.
+  // Sumamos el mes actual si está marcado.
   let bal=p.initial||0;
   const key=nowY()+'-'+nowM()+'-pocket-'+p.id;
   if(S.status[key]){
     const ov=S.overrides['pocket-'+p.id+'-'+nowM()];
     bal+=(ov!==undefined?ov:(p.monthly||0))*pocketMultForMonth(nowM());
   }
+  // Subtract manual expenses charged to this pocket (paid=true)
+  S.transactions.forEach(function(t){
+    if(t.type==='expense'&&t.pocket===p.id&&t.paid===true){
+      bal-=t.amount;
+    }
+  });
+  // Subtract transfer transactions FROM this pocket
+  S.transactions.forEach(function(t){
+    if(t.type==='transfer'&&t.fromPocket===p.id&&t.paid===true){
+      bal-=t.amount;
+    }
+  });
   return bal;
 }
 
@@ -981,7 +1017,8 @@ function renderDashboard(){
 
   // Only count paid/confirmed transactions
   const monthIncome=S.transactions.filter(t=>t.type==='income'&&t.paid===true&&t.date&&t.date.startsWith(ms)).reduce((s,t)=>s+t.amount,0);
-  const monthExpense=S.transactions.filter(t=>t.type==='expense'&&t.paid===true&&t.date&&t.date.startsWith(ms)).reduce((s,t)=>s+t.amount,0);
+  // Pocket expenses don't reduce available cash (they come from pocket balance)
+  const monthExpense=S.transactions.filter(t=>t.type==='expense'&&t.paid===true&&!t.pocket&&t.date&&t.date.startsWith(ms)).reduce((s,t)=>s+t.amount,0);
   const monthTransfer=S.transactions.filter(t=>t.type==='transfer'&&t.paid===true&&t.date&&t.date.startsWith(ms)).reduce((s,t)=>s+t.amount,0);
   const disponible=monthIncome-monthTransfer-monthExpense;
 
@@ -1120,7 +1157,8 @@ function renderMensual(){window._ma=[];
   // Disponible previsto
   const prevIn=S.incomes.reduce((s,i)=>s+incomeForMonth(i,m),0);
   const prevTr=S.pockets.reduce((s,p)=>s+(p.monthly||0)*pocketMultForMonth(m),0);
-  const prevEx=S.expenses.reduce((s,e)=>s+e.amount,0);
+  // Only count expenses WITHOUT a pocket - pocket expenses don't reduce available cash
+  const prevEx=S.expenses.filter(e=>!e.pocket).reduce((s,e)=>s+e.amount,0);
   const disp=prevIn-prevTr-prevEx;
   h+='<div class="mensual-summary"><div><div class="ms-label">Disponible previsto</div></div><div class="ms-amount">'+fmt(disp)+'</div></div>';
 
@@ -1430,6 +1468,45 @@ function togglePrevEdit(){
     prevEditMode=true;
   }
   renderPrevision();
+}
+
+// ─── NOTAS ───────────────────────────────────────────────────────────────────
+function initNotas(){
+  document.getElementById('notasCapital').value=S.notas&&S.notas.capital?S.notas.capital:'';
+  document.getElementById('notasText').value=S.notas&&S.notas.text?S.notas.text:'';
+  renderNotasPockets();
+}
+
+function renderNotasPockets(){
+  const container=document.getElementById('notasPockets');
+  const pocketAmounts=(S.notas&&S.notas.pockets)||{};
+  container.innerHTML=S.pockets.map(function(p){
+    const val=pocketAmounts[p.id]||'';
+    return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">'
+      +'<span style="font-size:18px;">'+p.emoji+'</span>'
+      +'<span style="flex:1;font-size:14px;font-weight:600;">'+p.name+'</span>'
+      +'<input class="fi" type="number" id="nota-pocket-'+p.id+'" value="'+val+'" placeholder="0.00" inputmode="decimal" step="0.01" style="width:120px;text-align:right;">'
+      +'</div>';
+  }).join('');
+  if(!S.pockets.length){
+    container.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 0;">Sin pockets configurados. Créalos en Mis Activos.</div>';
+  }
+}
+
+function saveNotas(){
+  const capital=parseFloat(document.getElementById('notasCapital').value)||0;
+  const text=document.getElementById('notasText').value;
+  const pockets={};
+  S.pockets.forEach(function(p){
+    const inp=document.getElementById('nota-pocket-'+p.id);
+    if(inp){const v=parseFloat(inp.value);if(!isNaN(v)&&v>0)pockets[p.id]=v;}
+  });
+  S.notas={capital,text,pockets};
+  save();
+  // Flash save button
+  const btn=document.getElementById('notasSaveBtn');
+  btn.textContent='✓ Guardado';
+  setTimeout(function(){btn.textContent='Guardar';},1500);
 }
 
 // ─── AJUSTES ─────────────────────────────────────────────────────────────────
