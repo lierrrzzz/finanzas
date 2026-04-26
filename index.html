@@ -244,7 +244,7 @@ input,select,textarea{font-family:'Inter',sans-serif;}
       <div class="menu-sub">Gestión personal</div>
     </div>
     <div class="menu-items">
-      <button class="menu-item" onclick="goTo('perfil')"><div class="menu-item-icon">👤</div>Perfil</button>
+      <button class="menu-item" onclick="goTo('misactivos')"><div class="menu-item-icon">👤</div>Mis Activos</button>
       <button class="menu-item" onclick="goTo('mensual')"><div class="menu-item-icon">📅</div>Vista Mensual</button>
       <button class="menu-item" onclick="goTo('gestionar')"><div class="menu-item-icon">⚙️</div>Gestionar Movimientos</button>
       <button class="menu-item" onclick="goTo('historial')"><div class="menu-item-icon">📋</div>Historial de Transacciones</button>
@@ -261,6 +261,7 @@ input,select,textarea{font-family:'Inter',sans-serif;}
 <div class="fab-menu" id="fabMenu">
   <button class="fab-option income" onclick="openTxModal('income');closeFabMenu()">↑ Nuevo Ingreso</button>
   <button class="fab-option expense" onclick="openTxModal('expense');closeFabMenu()">↓ Nuevo Gasto</button>
+  <button class="fab-option" style="color:var(--accent);border-color:var(--accent);" onclick="openTransferModal();closeFabMenu()">⇄ Nueva Transfer</button>
 </div>
 
 <!-- BOTTOM BAR -->
@@ -279,9 +280,9 @@ input,select,textarea{font-family:'Inter',sans-serif;}
     </div>
     <div id="txIncomeTypeGroup" style="display:none;">
       <div class="form-group">
-        <label class="form-label">Tipo de ingreso</label>
+        <label class="form-label">Origen</label>
         <select class="form-select form-input" id="txIncomeType" onchange="onIncomeTypeChange()">
-          <option value="">Selecciona tipo...</option>
+          <option value="">Selecciona origen...</option>
         </select>
       </div>
     </div>
@@ -301,6 +302,10 @@ input,select,textarea{font-family:'Inter',sans-serif;}
       <label class="form-label">Pocket (opcional)</label>
       <select class="form-select form-input" id="txPocket"><option value="">Sin pocket</option></select>
     </div>
+    <div class="form-group" id="txExpensePocketGroup" style="display:none;">
+      <label class="form-label">Pocket donde gastas</label>
+      <select class="form-select form-input" id="txExpensePocket"><option value="">Sin pocket</option></select>
+    </div>
     <div class="form-group" id="txAlreadyPaidGroup" style="display:none;">
       <div class="question-card">
         <div class="question-text">¿Este gasto ya se ha cobrado?</div>
@@ -312,6 +317,63 @@ input,select,textarea{font-family:'Inter',sans-serif;}
     </div>
     <button class="btn-primary" onclick="saveTx()">Guardar</button>
     <button class="btn-secondary" onclick="closeModal('modalTx')">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL: TRANSFER -->
+<div class="modal-overlay" id="modalTransfer" onclick="handleModalClick(event,'modalTransfer')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Nueva Transferencia</div>
+    <div class="form-group">
+      <label class="form-label">Pocket origen</label>
+      <select class="form-select form-input" id="transferOrigin">
+        <option value="">Selecciona pocket origen...</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Importe (€)</label>
+      <input class="form-input" type="number" id="transferAmount" placeholder="0.00" inputmode="decimal" step="0.01" min="0">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Destino (Pocket)</label>
+      <select class="form-select form-input" id="transferDest">
+        <option value="">Selecciona pocket...</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Fecha</label>
+      <input class="form-input" type="date" id="transferDate">
+    </div>
+    <button class="btn-primary" onclick="saveTransfer()">Guardar transferencia</button>
+    <button class="btn-secondary" onclick="closeModal('modalTransfer')">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL: EDIT TX -->
+<div class="modal-overlay" id="modalEditTx" onclick="handleModalClick(event,'modalEditTx')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Editar transacción</div>
+    <div class="form-group">
+      <label class="form-label">Cantidad (€)</label>
+      <input class="form-input" type="number" id="editTxAmount" placeholder="0.00" inputmode="decimal" step="0.01" min="0">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Descripción</label>
+      <input class="form-input" type="text" id="editTxDesc" placeholder="Descripción...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Fecha</label>
+      <input class="form-input" type="date" id="editTxDate">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Pocket (opcional)</label>
+      <select class="form-select form-input" id="editTxPocket"><option value="">Sin pocket</option></select>
+    </div>
+    <button class="btn-primary" onclick="saveEditTx()">Guardar cambios</button>
+    <button class="btn-secondary" style="color:var(--red);border-color:var(--red);" onclick="deleteEditTx()">Eliminar transacción</button>
+    <button class="btn-secondary" onclick="closeModal('modalEditTx')">Cancelar</button>
   </div>
 </div>
 
@@ -435,10 +497,10 @@ input,select,textarea{font-family:'Inter',sans-serif;}
 </div>
 
 <!-- PAGE: PERFIL -->
-<div class="page" id="pagePerfil">
+<div class="page" id="pageMisActivos">
   <div class="topbar">
     <button class="icon-btn" onclick="goBack()">←</button>
-    <div class="topbar-title">Perfil</div>
+    <div class="topbar-title">Mis Activos</div>
     <button class="edit-mode-btn" id="editModeBtn" onclick="toggleEditMode()">Editar</button>
   </div>
   <div class="profile-tabs">
@@ -462,6 +524,9 @@ input,select,textarea{font-family:'Inter',sans-serif;}
     <div class="month-label" id="monthLabel"></div>
     <button class="month-nav-btn" onclick="changeMonth(1)">›</button>
   </div>
+  <div id="mensualTodayBtn" style="display:none;padding:8px 20px;background:var(--bg);border-bottom:1px solid var(--border);">
+    <button onclick="goToCurrentMonth()" style="width:100%;padding:9px;background:var(--accent-light);color:var(--accent);border:1.5px solid var(--accent);border-radius:10px;font-size:13px;font-weight:700;font-family:Inter,sans-serif;">↩ Ir al mes actual</button>
+  </div>
   <div id="mensualContent"></div>
 </div>
 
@@ -476,6 +541,9 @@ input,select,textarea{font-family:'Inter',sans-serif;}
     <button class="month-nav-btn" onclick="changeGestionMonth(-1)">‹</button>
     <div class="month-label" id="gestionMonthLabel"></div>
     <button class="month-nav-btn" onclick="changeGestionMonth(1)">›</button>
+  </div>
+  <div id="gestionTodayBtn" style="display:none;padding:8px 20px;background:var(--bg);border-bottom:1px solid var(--border);">
+    <button onclick="goToCurrentGestionMonth()" style="width:100%;padding:9px;background:var(--accent-light);color:var(--accent);border:1.5px solid var(--accent);border-radius:10px;font-size:13px;font-weight:700;font-family:Inter,sans-serif;">↩ Ir al mes actual</button>
   </div>
   <div id="gestionContent"></div>
 </div>
@@ -611,18 +679,18 @@ let currentPage='Dashboard',pageHistory=[];
 // ── NAV ──
 function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page'+id).classList.add('active');currentPage=id;const bar=document.getElementById('bottomBar');if(bar)bar.style.display=id==='Dashboard'?'flex':'none';}
 function goTo(page){
-  if(currentPage==='Perfil'&&editMode){editMode=false;if(document.getElementById('editModeBtn'))document.getElementById('editModeBtn').textContent='Editar';}
+  if(currentPage==='MisActivos'&&editMode){editMode=false;if(document.getElementById('editModeBtn'))document.getElementById('editModeBtn').textContent='Editar';}
   pageHistory.push(currentPage);closeMenu();
-  const map={perfil:'Perfil',mensual:'Mensual',gestionar:'Gestionar',historial:'Historial',prevision:'Prevision',ajustes:'Ajustes'};
+  const map={misactivos:'MisActivos',mensual:'Mensual',gestionar:'Gestionar',historial:'Historial',prevision:'Prevision',ajustes:'Ajustes'};
   showPage(map[page]||page);
-  if(page==='perfil')renderProfile();
+  if(page==='misactivos')renderProfile();
   if(page==='mensual')renderMensual();
   if(page==='gestionar')renderGestion();
   if(page==='historial')renderHistorial();
   if(page==='prevision')renderPrevisionSelect();
   if(page==='ajustes')renderAjustes();
 }
-function goBack(){if(currentPage==='Perfil'&&editMode){editMode=false;document.getElementById('editModeBtn').textContent='Editar';}if(currentPage==='Prevision')prevEditMode=false;const prev=pageHistory.pop()||'Dashboard';showPage(prev);if(prev==='Dashboard')renderDashboard();}
+function goBack(){if(currentPage==='MisActivos'&&editMode){editMode=false;document.getElementById('editModeBtn').textContent='Editar';}if(currentPage==='Prevision')prevEditMode=false;const prev=pageHistory.pop()||'Dashboard';showPage(prev);if(prev==='Dashboard')renderDashboard();}
 
 // ── MENU ──
 function openMenu(){
@@ -658,9 +726,9 @@ function setTxType(t){
   document.getElementById('btnTxIncome').className='type-btn'+(t==='income'?' active income':'');
   document.getElementById('btnTxExpense').className='type-btn expense'+(t==='expense'?' active':'');
   document.getElementById('txIncomeTypeGroup').style.display=t==='income'?'block':'none';
-  document.getElementById('txPocketGroup').style.display=t==='expense'?'block':'none';
+  document.getElementById('txPocketGroup').style.display='none'; // hidden, pocket for expense only via txExpensePocketGroup
+  document.getElementById('txExpensePocketGroup').style.display=t==='expense'?'block':'none';
   document.getElementById('txAlreadyPaidGroup').style.display=t==='expense'?'block':'none';
-  // reset paid state
   txPaid=true;
   document.getElementById('txPaidYes').className='q-btn yes';
   document.getElementById('txPaidNo').className='q-btn';
@@ -675,8 +743,8 @@ function openTxModal(type){
   document.getElementById('txAmount').value='';
   document.getElementById('txDesc').value='';
   document.getElementById('txDate').value=today();
-  document.getElementById('txIncomeType').innerHTML='<option value="">Selecciona tipo...</option>'+state.incomes.map(i=>`<option value="${i.id}">${i.emoji||'💼'} ${i.name}</option>`).join('');
-  populatePocketSelect('txPocket');
+  document.getElementById('txIncomeType').innerHTML='<option value="">Selecciona origen...</option>'+state.incomes.map(i=>'<option value="'+i.id+'">'+(i.emoji||'💼')+' '+i.name+'</option>').join('');
+  populatePocketSelect('txExpensePocket');
   openModal('modalTx');
 }
 function onIncomeTypeChange(){
@@ -692,8 +760,7 @@ function saveTx(){
   if(!amount||amount<=0)return;
   const desc=document.getElementById('txDesc').value.trim();
   const date=document.getElementById('txDate').value||today();
-  const pocket=document.getElementById('txPocket').value;
-  // For expenses: only mark as paid if user confirmed
+  const pocket=txType==='expense'?document.getElementById('txExpensePocket').value:'';
   const isPaid=txType==='income'?true:txPaid;
   state.transactions.push({id:uid(),type:txType,amount,desc,date,pocket,paid:isPaid});
   saveState();closeModal('modalTx');renderDashboard();
@@ -722,7 +789,7 @@ function savePocket(){
   if(!name)return;
   if(editingId.pocket){const p=state.pockets.find(x=>x.id===editingId.pocket);if(p)Object.assign(p,{name,initial,monthly,type,emoji:selectedEmoji.pocket});}
   else state.pockets.push({id:uid(),name,initial,monthly,type,emoji:selectedEmoji.pocket});
-  saveState();closeModal('modalPocket');renderDashboard();if(currentPage==='Perfil')renderProfile();
+  saveState();closeModal('modalPocket');renderDashboard();if(currentPage==='MisActivos')renderProfile();
 }
 function createExpenseFromPocket(){
   closeModal('modalPocket');
@@ -975,6 +1042,8 @@ function getMonthStatus(year,month){
 }
 
 // ── MENSUAL ──
+function goToCurrentMonth(){viewMonth=nowMonth();viewYear=nowYear();renderMensual();}
+function goToCurrentGestionMonth(){gestionMonth=nowMonth();gestionYear=nowYear();renderGestion();}
 function changeMonth(dir){
   viewMonth+=dir;
   if(viewMonth<0){viewMonth=11;viewYear--;}
@@ -982,7 +1051,10 @@ function changeMonth(dir){
   renderMensual();
 }
 function renderMensual(){
-  document.getElementById('monthLabel').textContent=`${MONTHS_ES[viewMonth]} ${viewYear}`;
+  window._mActions=[];
+  document.getElementById('monthLabel').textContent=MONTHS_ES[viewMonth]+' '+viewYear;
+  var todayBtn=document.getElementById('mensualTodayBtn');
+  if(todayBtn)todayBtn.style.display=(viewMonth===nowMonth()&&viewYear===nowYear())?'none':'block';
   const status=getMonthStatus(viewYear,viewMonth);
   let html='';
 
@@ -999,13 +1071,15 @@ function renderMensual(){
     else if(done){checkClass='done-current';checkContent='✓';}
     else if(isFuture){checkClass='locked';checkContent='&#8212;';}
     const canToggle=!isPast&&!isFuture;
-    const onclick=canToggle?'onclick="toggleStatus(\''+key+'\',\'mensual\')"':'';
+    const eidx=window._mActions?window._mActions.length:0;
+    if(canToggle&&window._mActions)window._mActions.push({type:'toggle',key:key,view:'mensual'});
+    const onclick=canToggle?'onclick="window._mActions&&handleMAction('+eidx+')"':'';
     return '<div class="month-item">'
       +'<div class="month-item-check '+checkClass+'" '+onclick+'>'+checkContent+'</div>'
       +'<div class="month-item-info"><div class="month-item-name">'+name+'</div><div class="month-item-sub">'+sub+'</div></div>'
       +'<div class="month-item-amount">'+amountHtml+'</div>'
       +'</div>';
-  };
+  };;
 
   // INCOMES
   html+='<div class="month-section"><div class="month-section-header">💰 Ingresos</div>';
@@ -1022,17 +1096,19 @@ function renderMensual(){
     const sub='Día '+(inc.day||1)+(inc.isSalary&&inc.hasDouble&&inc.doubleMonths&&inc.doubleMonths.includes(viewMonth)?' · Paga doble ✨':'');
     html+=renderItem(key,done,status==='past',status==='future',inc.emoji+''+inc.name,sub,'<span style="color:var(--green)">+'+fmt(amt)+'</span>');
   });
-  // Manual transactions shown as read-only entries
-  manualIncomes.forEach(t=>{
-    const d=new Date(t.date);
-    const dayStr='Día '+d.getDate()+' · Manual';
+  // Manual income transactions - toggleable
+  manualIncomes.forEach(function(t){
+    var d=new Date(t.date);
+    var idx=window._mActions.length;
+    window._mActions.push({type:'remove',id:t.id});
     html+='<div class="month-item">'
-      +'<div class="month-item-check done-current" style="background:var(--green);border-color:var(--green);color:#fff;cursor:default;">✓</div>'
-      +'<div class="month-item-info"><div class="month-item-name">💰 '+(t.desc||'Ingreso')+'</div><div class="month-item-sub">'+dayStr+'</div></div>'
+      +'<div class="month-item-check done-current" style="background:var(--green);border-color:var(--green);color:#fff;cursor:pointer;" onclick="handleMAction('+idx+')">✓</div>'
+      +'<div class="month-item-info"><div class="month-item-name">💰 '+(t.desc||'Ingreso')+'</div><div class="month-item-sub">Día '+d.getDate()+' · Manual</div></div>'
       +'<div class="month-item-amount income">+'+fmt(t.amount)+'</div>'
       +'</div>';
   });
   html+='</div>';
+
 
   // TRANSFERS
   html+=`<div class="month-section"><div class="month-section-header">💳 Transferencias a Pockets</div>`;
@@ -1055,11 +1131,26 @@ function renderMensual(){
     const pocket=exp.pocket?state.pockets.find(p=>p.id===exp.pocket):null;
     html+=renderItem(key,done,status==='past',status==='future',`${exp.emoji||'📦'} ${exp.name}`,`Día ${exp.day||1}${pocket?' · '+pocket.emoji+' '+pocket.name:''}`,`<span style="color:var(--red)">−${fmt(exp.amount)}</span>`);
   });
-  // Manual expense transactions
-  manualExpenses.forEach(t=>{
-    const d=new Date(t.date);
+  // Manual transfer transactions this month
+  const manualTransfers=state.transactions.filter(function(t){return t.type==='transfer'&&!t.statusKey&&t.date&&t.date.startsWith(viewMonthStr);});
+  manualTransfers.forEach(function(t){
+    var d=new Date(t.date);
+    var idx=window._mActions.length;
+    window._mActions.push({type:'remove',id:t.id});
     html+='<div class="month-item">'
-      +'<div class="month-item-check done-current" style="background:var(--green);border-color:var(--green);color:#fff;cursor:default;">✓</div>'
+      +'<div class="month-item-check done-current" style="background:var(--green);border-color:var(--green);color:#fff;cursor:pointer;" onclick="handleMAction('+idx+')">✓</div>'
+      +'<div class="month-item-info"><div class="month-item-name">⇄ '+(t.desc||'Transfer')+'</div><div class="month-item-sub">Manual · Día '+d.getDate()+'</div></div>'
+      +'<div class="month-item-amount transfer">'+fmt(t.amount)+'</div>'
+      +'</div>';
+  });
+
+  // Manual expense transactions - toggleable
+  manualExpenses.forEach(function(t){
+    var d=new Date(t.date);
+    var idx=window._mActions.length;
+    window._mActions.push({type:'remove',id:t.id});
+    html+='<div class="month-item">'
+      +'<div class="month-item-check done-current" style="background:var(--green);border-color:var(--green);color:#fff;cursor:pointer;" onclick="handleMAction('+idx+')">✓</div>'
       +'<div class="month-item-info"><div class="month-item-name">📤 '+(t.desc||'Gasto')+'</div><div class="month-item-sub">Manual · Día '+d.getDate()+'</div></div>'
       +'<div class="month-item-amount expense">−'+fmt(t.amount)+'</div>'
       +'</div>';
@@ -1120,9 +1211,13 @@ function changeGestionMonth(dir){
   renderGestion();
 }
 function renderGestion(){
-  document.getElementById('gestionMonthLabel').textContent=`${MONTHS_ES[gestionMonth]} ${gestionYear}`;
+  window._mActions=[];
+  document.getElementById('gestionMonthLabel').textContent=MONTHS_ES[gestionMonth]+' '+gestionYear;
+  var gBtn=document.getElementById('gestionTodayBtn');
+  if(gBtn)gBtn.style.display=(gestionMonth===nowMonth()&&gestionYear===nowYear())?'none':'block';
   const status=getMonthStatus(gestionYear,gestionMonth);
-  let html=`<div style="padding:10px 20px 4px;font-size:12px;color:var(--muted);">Edita los movimientos en <strong>Perfil</strong>. Aquí gestionas el estado de cada mes.</div>`;
+  const gMonthStr=gestionYear+'-'+String(gestionMonth+1).padStart(2,'0');
+  let html='<div style="padding:10px 20px 4px;font-size:12px;color:var(--muted);">Gestiona el estado de cada mes.</div>';
 
   const renderGItem=(key,done,isPast,isFuture,name,sub,amountHtml)=>{
     let checkClass='',checkContent='';
@@ -1130,13 +1225,15 @@ function renderGestion(){
     else if(done){checkClass='done-current';checkContent='✓';}
     else if(isFuture){checkClass='locked';checkContent='&#8212;';}
     const canToggle=!isPast&&!isFuture;
-    const onclick=canToggle?'onclick="toggleStatus(\''+key+'\',\'gestion\')"':'';
+    const eidx=window._mActions?window._mActions.length:0;
+    if(canToggle&&window._mActions)window._mActions.push({type:'toggle',key:key,view:'gestion'});
+    const onclick=canToggle?'onclick="window._mActions&&handleMAction('+eidx+')"':'';
     return '<div class="month-item">'
       +'<div class="month-item-check '+checkClass+'" '+onclick+'>'+checkContent+'</div>'
       +'<div class="month-item-info"><div class="month-item-name">'+name+'</div><div class="month-item-sub">'+sub+'</div></div>'
       +'<div>'+amountHtml+'</div>'
       +'</div>';
-  };
+  };;
 
   const gestionMonthStr=gestionYear+'-'+String(gestionMonth+1).padStart(2,'0');
   state.incomes.filter(inc=>inc.amount>0).forEach(inc=>{
@@ -1165,13 +1262,48 @@ function renderGestion(){
     html+=renderGItem(key,done,status==='past',status==='future',`${exp.emoji||'📦'} ${exp.name}`,`Gasto · Día ${exp.day||1}`,`<span class="tx-amount expense">−${fmt(exp.amount)}</span>`);
   });
 
+  // Manual transactions - merged inline with configured items
+  const manualGIncome=state.transactions.filter(function(t){return t.type==='income'&&!t.statusKey&&t.date&&t.date.startsWith(gMonthStr);});
+  const manualGExpense=state.transactions.filter(function(t){return t.type==='expense'&&!t.statusKey&&t.date&&t.date.startsWith(gMonthStr);});
+  const manualGTransfer=state.transactions.filter(function(t){return t.type==='transfer'&&!t.statusKey&&t.date&&t.date.startsWith(gMonthStr);});
+
+  function manualTick(id){
+    var idx=window._mActions.length;
+    window._mActions.push({type:'remove',id:id});
+    return '<div class="month-item-check done-current" style="background:var(--green);border-color:var(--green);color:#fff;cursor:pointer;" onclick="handleMAction('+idx+')">✓</div>';
+  }
+  function editBtn(id){
+    var idx=window._mActions.length;
+    window._mActions.push({type:'edit',id:id});
+    return '<button onclick="handleMAction('+idx+')" style="background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:4px 8px;font-size:12px;color:var(--accent);font-weight:600;">✏️</button>';
+  }
+
+  manualGIncome.forEach(function(t){
+    html+='<div class="month-item">'+manualTick(t.id)
+      +'<div class="month-item-info"><div class="month-item-name">💰 '+(t.desc||'Ingreso')+'</div>'
+      +'<div class="month-item-sub">Manual · '+new Date(t.date).toLocaleDateString('es-ES',{day:'numeric',month:'short'})+'</div></div>'
+      +'<div style="display:flex;align-items:center;gap:8px;"><span class="tx-amount income">+'+fmt(t.amount)+'</span>'+editBtn(t.id)+'</div></div>';
+  });
+  manualGTransfer.forEach(function(t){
+    html+='<div class="month-item">'+manualTick(t.id)
+      +'<div class="month-item-info"><div class="month-item-name">⇄ '+(t.desc||'Transfer')+'</div>'
+      +'<div class="month-item-sub">Manual · '+new Date(t.date).toLocaleDateString('es-ES',{day:'numeric',month:'short'})+'</div></div>'
+      +'<div style="display:flex;align-items:center;gap:8px;"><span class="tx-amount" style="color:var(--accent);">'+fmt(t.amount)+'</span>'+editBtn(t.id)+'</div></div>';
+  });
+  manualGExpense.forEach(function(t){
+    html+='<div class="month-item">'+manualTick(t.id)
+      +'<div class="month-item-info"><div class="month-item-name">📤 '+(t.desc||'Gasto')+'</div>'
+      +'<div class="month-item-sub">Manual · '+new Date(t.date).toLocaleDateString('es-ES',{day:'numeric',month:'short'})+'</div></div>'
+      +'<div style="display:flex;align-items:center;gap:8px;"><span class="tx-amount expense">−'+fmt(t.amount)+'</span>'+editBtn(t.id)+'</div></div>';
+  });
+
   document.getElementById('gestionContent').innerHTML=html;
 }
 
 // ── HISTORIAL ──
 let historialFilter='hoy';
 function renderHistorial(){
-  const filters=[{id:'hoy',label:'Hoy'},{id:'semana',label:'Esta semana'},{id:'mes',label:'Este mes'},{id:'3m',label:'Últ. 3 meses'},{id:'6m',label:'Últ. 6 meses'},{id:'año',label:'Este año'}];
+  const filters=[{id:'hoy',label:'Hoy'},{id:'semana',label:'Esta semana'},{id:'mes',label:'Este mes'},{id:'3m',label:'Últ. 3 meses'},{id:'6m',label:'Últ. 6 meses'},{id:'año',label:'Este año 2026'}];
   document.getElementById('historialFilters').innerHTML=filters.map(f=>`<button class="filter-chip${historialFilter===f.id?' active':''}" onclick="setHistorialFilter('${f.id}')">${f.label}</button>`).join('');
   const now=new Date();
   const txs=state.transactions.filter(t=>{
@@ -1196,18 +1328,32 @@ function renderHistorial(){
     if(dateA<dateB)return-1;if(dateA>dateB)return 1;
     return 0;
   });
-  list.innerHTML=txs.map(t=>{
-    const sign=t.type==='income'?'+':t.type==='transfer'?'':'−';
-    const icon=t.type==='income'?'↑':t.type==='transfer'?'⇄':'↓';
-    const d=new Date(t.date);
-    const amtColor=t.type==='income'?'var(--green)':t.type==='transfer'?'var(--accent)':'var(--red)';
-    return '<div class="tx-item">'
-      +'<div class="tx-icon '+t.type+'">'+icon+'</div>'
-      +'<div class="tx-info"><div class="tx-name">'+(t.desc||'Sin descripción')+'</div>'
-      +'<div class="tx-date">'+d.toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'})+'</div></div>'
-      +'<div class="tx-amount" style="color:'+amtColor+'">'+sign+fmt(t.amount)+'</div>'
-      +'</div>';
+  window._hActions=[];
+  list.innerHTML=txs.map(function(t){
+    var sign=t.type==='income'?'+':t.type==='transfer'?'':'−';
+    var icon=t.type==='income'?'↑':t.type==='transfer'?'⇄':'↓';
+    var d=new Date(t.date);
+    var amtColor=t.type==='income'?'var(--green)':t.type==='transfer'?'var(--accent)':'var(--red)';
+    var isFixed=!!t.statusKey;
+    var row='<div class="tx-item">';
+    row+='<div class="tx-icon '+t.type+'">'+icon+'</div>';
+    row+='<div class="tx-info"><div class="tx-name">'+(t.desc||'Sin descripción')+'</div>';
+    row+='<div class="tx-date">'+d.toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'})+'</div></div>';
+    row+='<div style="display:flex;align-items:center;gap:8px;">';
+    row+='<div class="tx-amount" style="color:'+amtColor+'">'+sign+fmt(t.amount)+'</div>';
+    if(isFixed){
+      row+='<span style="font-size:10px;color:var(--muted);padding:4px 8px;background:var(--bg);border-radius:6px;border:1px solid var(--border);">Fijo</span>';
+    } else {
+      var eidx=window._hActions?window._hActions.length:0;if(window._hActions)window._hActions.push(t.id);
+      row+='<button onclick="handleHAction('+eidx+')" style="background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:5px 9px;font-size:12px;color:var(--accent);font-weight:600;">✏️</button>';
+    }
+    row+='</div></div>';
+    return row;
   }).join('');
+}
+function handleHAction(idx){
+  if(!window._hActions||idx>=window._hActions.length)return;
+  openEditTx(window._hActions[idx]);
 }
 function setHistorialFilter(f){historialFilter=f;renderHistorial();}
 
@@ -1227,8 +1373,9 @@ let prevCurrentId='';
 
 function togglePrevEditMode(){
   if(prevEditMode){
-    // Save all visible inputs before closing edit mode
-    document.querySelectorAll('.prev-amt-input').forEach(function(inp){
+    // Collect all input values before toggling (they exist in DOM now)
+    var inputs=document.querySelectorAll('.prev-amt-input');
+    inputs.forEach(function(inp){
       var i=parseInt(inp.getAttribute('data-month'));
       var val=parseFloat(inp.value);
       if(!isNaN(val)&&val>=0){
@@ -1237,8 +1384,10 @@ function togglePrevEditMode(){
       }
     });
     saveState();
+    prevEditMode=false;
+  } else {
+    prevEditMode=true;
   }
-  prevEditMode=!prevEditMode;
   renderPrevision();
 }
 
@@ -1434,6 +1583,79 @@ function initNotifs(){
     if(document.getElementById('notifTime'))document.getElementById('notifTime').value=state.notifTime||'09:00';
     scheduleNotification();
   }
+}
+
+// ── REMOVE MANUAL TX ──
+function handleMAction(idx){
+  if(!window._mActions||idx>=window._mActions.length)return;
+  var action=window._mActions[idx];
+  if(action.type==='toggle')toggleStatus(action.key,action.view);
+  else if(action.type==='remove')removeManualTx(action.id);
+  else if(action.type==='edit')openEditTx(action.id);
+}
+function removeManualTx(id){
+  if(!confirm('¿Quitar este movimiento? Se eliminará del historial y no podrá recuperarse.'))return;
+  state.transactions=state.transactions.filter(function(t){return t.id!==id;});
+  saveState();
+  if(currentPage==='Mensual')renderMensual();
+  if(currentPage==='Gestionar')renderGestion();
+  renderDashboard();
+}
+
+// ── TRANSFER ──
+function openTransferModal(){
+  // Both origin and destination are pockets
+  const pocketOptions=state.pockets.map(function(p){return '<option value="'+p.id+'">'+p.emoji+' '+p.name+'</option>';}).join('');
+  document.getElementById('transferOrigin').innerHTML='<option value="">Pocket origen...</option>'+pocketOptions;
+  document.getElementById('transferDest').innerHTML='<option value="">Pocket destino...</option>'+pocketOptions;
+  document.getElementById('transferAmount').value='';
+  document.getElementById('transferDate').value=today();
+  openModal('modalTransfer');
+}
+function saveTransfer(){
+  const amount=parseFloat(document.getElementById('transferAmount').value);
+  if(!amount||amount<=0)return;
+  const originId=document.getElementById('transferOrigin').value;
+  const destId=document.getElementById('transferDest').value;
+  if(!destId){alert('Selecciona un pocket de destino.');return;}
+  const originPocket=state.pockets.find(function(p){return p.id===originId;});
+  const destPocket=state.pockets.find(function(p){return p.id===destId;});
+  const desc='Transfer'+(originPocket?' de '+originPocket.name:'')+(destPocket?' a '+destPocket.name:'');
+  const date=document.getElementById('transferDate').value||today();
+  state.transactions.push({id:uid(),type:'transfer',amount,desc,date,pocket:destId,paid:true});
+  saveState();closeModal('modalTransfer');renderDashboard();
+}
+
+// ── EDIT TRANSACTION ──
+let editingTxId=null;
+function openEditTx(id){
+  const t=state.transactions.find(x=>x.id===id);
+  if(!t)return;
+  // statusKey transactions are from ticks - not directly editable here
+  if(t.statusKey){alert('Este movimiento está vinculado a un tick de vista mensual. Edítalo desde ahí.');return;}
+  editingTxId=id;
+  document.getElementById('editTxAmount').value=t.amount||'';
+  document.getElementById('editTxDesc').value=t.desc||'';
+  document.getElementById('editTxDate').value=t.date||today();
+  populatePocketSelect('editTxPocket');
+  if(t.pocket)document.getElementById('editTxPocket').value=t.pocket;
+  openModal('modalEditTx');
+}
+function saveEditTx(){
+  const t=state.transactions.find(x=>x.id===editingTxId);
+  if(!t)return;
+  const amount=parseFloat(document.getElementById('editTxAmount').value);
+  if(!amount||amount<=0)return;
+  t.amount=amount;
+  t.desc=document.getElementById('editTxDesc').value.trim();
+  t.date=document.getElementById('editTxDate').value||today();
+  t.pocket=document.getElementById('editTxPocket').value;
+  saveState();closeModal('modalEditTx');renderHistorial();renderDashboard();
+}
+function deleteEditTx(){
+  if(!confirm('¿Seguro que quieres eliminar esta transacción? Esta acción no se puede revertir.'))return;
+  state.transactions=state.transactions.filter(x=>x.id!==editingTxId);
+  saveState();closeModal('modalEditTx');renderHistorial();renderDashboard();
 }
 
 // ── AJUSTES ──
