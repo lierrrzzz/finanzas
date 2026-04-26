@@ -322,15 +322,7 @@ input,select{font-family:'Inter',sans-serif;}
       <label class="fl">Pocket (opcional)</label>
       <select class="fi" id="txPocket"><option value="">Sin pocket</option></select>
     </div>
-    <div id="txPaidGroup" class="fg" style="display:none">
-      <div class="q-card">
-        <div class="q-text">¿Este gasto ya se ha cobrado?</div>
-        <div class="q-btns">
-          <button class="q-btn yes" id="txPaidY" onclick="setTxPaid(true)">Sí</button>
-          <button class="q-btn" id="txPaidN" onclick="setTxPaid(false)">No</button>
-        </div>
-      </div>
-    </div>
+
     <button class="btn-p" onclick="saveTx()">Guardar</button>
     <button class="btn-s" onclick="closeModal('mTx')">Cancelar</button>
   </div>
@@ -700,7 +692,7 @@ function openTx(type){
   const psel=document.getElementById('txPocket');
   psel.innerHTML='<option value="">Sin pocket</option>'+S.pockets.map(p=>'<option value="'+p.id+'">'+p.emoji+' '+p.name+'</option>').join('');
   document.getElementById('txPocketGroup').style.display=type==='expense'?'block':'none';
-  document.getElementById('txPaidGroup').style.display=type==='expense'?'block':'none';
+
   document.getElementById('txPaidY').className='q-btn yes';
   document.getElementById('txPaidN').className='q-btn';
   document.getElementById('txAmt').value='';
@@ -718,11 +710,7 @@ function onOriginChange(){
   if(inc){document.getElementById('txDesc').value=inc.name;}
 }
 
-function setTxPaid(v){
-  txPaid=v;
-  document.getElementById('txPaidY').className='q-btn'+(v?' yes':'');
-  document.getElementById('txPaidN').className='q-btn'+(v?'':' no');
-}
+function setTxPaid(v){txPaid=v;}
 
 function saveTx(){
   const amt=parseFloat(document.getElementById('txAmt').value);
@@ -1058,7 +1046,7 @@ function toggleStatus(key,view){
 
   if(isOn){
     // Add transaction
-    let desc='',amount=0,txType='income';
+    let desc='',amount=0,txType='income',pocket='';
     const ds=ky+'-'+String(km+1).padStart(2,'0')+'-01';
     if(ktype==='income'){
       const inc=S.incomes.find(x=>x.id===kid);
@@ -1070,11 +1058,11 @@ function toggleStatus(key,view){
       if(p){desc='Transfer a '+p.name;amount=(ov!==undefined?ov:(p.monthly||0))*mult;txType='transfer';}
     } else if(ktype==='expense'){
       const exp=S.expenses.find(x=>x.id===kid);
-      if(exp){desc=exp.name;amount=exp.amount;txType='expense';}
+      if(exp){desc=exp.name;amount=exp.amount;txType='expense';if(exp.pocket)pocket=exp.pocket;}
     }
     if(amount>0){
       S.transactions=S.transactions.filter(t=>t.statusKey!==txKey);
-      S.transactions.push({id:uid(),type:txType,amount,desc,date:ds,paid:true,statusKey:txKey});
+      S.transactions.push({id:uid(),type:txType,amount,desc,date:ds,pocket:pocket,paid:true,statusKey:txKey});
     }
   } else {
     S.transactions=S.transactions.filter(t=>t.statusKey!==txKey);
