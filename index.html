@@ -294,9 +294,9 @@ input,select{font-family:'Inter',sans-serif;}
 <!-- FAB -->
 <div class="fab-backdrop" id="fabBD" onclick="closeFab()"></div>
 <div class="fab-menu" id="fabMenu">
-  <button class="fab-opt in" onclick="openTx('income');closeFab()">↑ Nuevo Ingreso</button>
-  <button class="fab-opt ex" onclick="openTx('expense');closeFab()">↓ Nuevo Gasto</button>
-  <button class="fab-opt tr" onclick="openTransfer();closeFab()">⇄ Nueva Transfer</button>
+  <button class="fab-opt in" id="fabIncome">↑ Nuevo Ingreso</button>
+  <button class="fab-opt ex" id="fabExpense">↓ Nuevo Gasto</button>
+  <button class="fab-opt tr" id="fabTransfer">⇄ Nueva Transfer</button>
 </div>
 <div class="bottom-bar" id="bottomBar">
   <button class="fab-main" onclick="toggleFab()">+</button>
@@ -693,8 +693,7 @@ function openTx(type){
   psel.innerHTML='<option value="">Sin pocket</option>'+S.pockets.map(p=>'<option value="'+p.id+'">'+p.emoji+' '+p.name+'</option>').join('');
   document.getElementById('txPocketGroup').style.display=type==='expense'?'block':'none';
 
-  document.getElementById('txPaidY').className='q-btn yes';
-  document.getElementById('txPaidN').className='q-btn';
+
   document.getElementById('txAmt').value='';
   document.getElementById('txDesc').value='';
   document.getElementById('txDate').value=today();
@@ -1557,6 +1556,11 @@ function importCSV(e){
 if(S.theme==='dark')document.documentElement.setAttribute('data-theme','dark');
 renderDashboard();
 if(Notification&&Notification.permission==='granted'&&(S.notifDay||S.notifTime))scheduleNotif();
+
+// FAB buttons - use addEventListener to work in Safari mobile
+document.getElementById('fabIncome').addEventListener('click',function(){openTx('income');closeFab();});
+document.getElementById('fabExpense').addEventListener('click',function(){openTx('expense');closeFab();});
+document.getElementById('fabTransfer').addEventListener('click',function(){openTransfer();closeFab();});
 </script>
 </body>
 </html>
