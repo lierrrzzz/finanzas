@@ -552,6 +552,9 @@ input,select{font-family:'Inter',sans-serif;}
         <div><div class="settings-row-label">Importar datos</div><div class="settings-row-sub">Restaura todos los datos desde un backup</div></div>
         <label style="cursor:pointer;"><input type="file" accept="*" style="display:none" onchange="importCSV(event)"><span class="action-btn" style="background:var(--accent-light);color:var(--accent);display:inline-block;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:700;">📥 Importar</span></label>
       </div>
+      <div class="settings-row" id="lastImportRow" style="display:none;">
+        <div><div class="settings-row-label" style="color:var(--muted);font-weight:500;">Última importación</div><div class="settings-row-sub" id="lastImportDate" style="color:var(--muted);"></div></div>
+      </div>
     </div>
   </div>
   <div class="settings-section" style="margin-top:14px;">
@@ -1512,6 +1515,14 @@ function saveNotas(){
 function renderAjustes(){
   document.getElementById('themeLight').className='theme-btn'+(S.theme==='light'?' active':'');
   document.getElementById('themeDark').className='theme-btn'+(S.theme==='dark'?' active':'');
+  const row=document.getElementById('lastImportRow');
+  const label=document.getElementById('lastImportDate');
+  if(S.lastImport&&row&&label){
+    const d=new Date(S.lastImport);
+    const str=d.toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'})+' a las '+d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+    label.textContent=str;
+    row.style.display='flex';
+  }
 }
 function setTheme(t){S.theme=t;document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'');save();renderAjustes();}
 
@@ -1579,10 +1590,12 @@ function importCSV(e){
         S.overrides=data.overrides||{};
         S.notas=data.notas||{};
         if(data.theme)S.theme=data.theme;
+        S.lastImport=new Date().toISOString();
         save();
         if(S.theme==='dark')document.documentElement.setAttribute('data-theme','dark');
         else document.documentElement.removeAttribute('data-theme');
         renderDashboard();
+        renderAjustes();
         alert('Copia de seguridad restaurada correctamente.');
       } else {
         // Legacy CSV fallback
