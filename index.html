@@ -1049,7 +1049,7 @@ function toggleStatus(key,view){
     const ds=ky+'-'+String(km+1).padStart(2,'0')+'-01';
     if(ktype==='income'){
       const inc=S.incomes.find(x=>x.id===kid);
-      if(inc){desc=inc.name;amount=incomeForMonth(inc,km);txType='income';}
+      if(inc){desc=inc.name;amount=incomeForMonthWithOverride(inc,km);txType='income';}
     } else if(ktype==='pocket'){
       const p=S.pockets.find(x=>x.id===kid);
       const mult=pocketMultForMonth(km);
@@ -1153,9 +1153,11 @@ function renderMensual(){window._ma=[];
   h+='<div class="msection-header">💰 Ingresos</div>';
   S.incomes.filter(i=>i.amount>0).forEach(function(inc){
     const key=y+'-'+m+'-income-'+inc.id;
-    const amt=incomeForMonth(inc,m);
-    const isDouble=inc.hasDouble&&inc.doubleMonths&&inc.doubleMonths.includes(m);
-    h+=mItem(phase,key,'mensual',(inc.emoji||'💼')+' '+inc.name,'Día '+(inc.day||1)+(isDouble?' · Paga doble ✨':''),'<span style="color:var(--green)">+'+fmt(amt)+'</span>');
+    const amt=incomeForMonthWithOverride(inc,m);
+    const isDouble=inc.hasDouble&&inc.doubleMonths&&inc.doubleMonths.includes(m)&&S.overrides['income-'+inc.id+'-'+m]===undefined;
+    const hasOv=S.overrides['income-'+inc.id+'-'+m]!==undefined;
+    const label=(inc.emoji||'💼')+' '+inc.name+(hasOv?' <span style="font-size:10px;color:var(--purple);font-weight:700;">✎</span>':'');
+    h+=mItem(phase,key,'mensual',label,'Día '+(inc.day||1)+(isDouble?' · Paga doble ✨':''),'<span style="color:'+(hasOv?'var(--purple)':'var(--green)')+'">+'+fmt(amt)+'</span>');
   });
   // Manual incomes
   S.transactions.filter(t=>t.type==='income'&&!t.statusKey&&t.date&&t.date.startsWith(ms)).forEach(t=>h+=manualItem(t,'mensual'));
@@ -1167,7 +1169,8 @@ function renderMensual(){window._ma=[];
     const mult=pocketMultForMonth(m);
     const ov=S.overrides['pocket-'+p.id+'-'+m];
     const amt=(ov!==undefined?ov:(p.monthly||0))*mult;
-    h+=mItem(phase,key,'mensual',p.emoji+' '+p.name,p.type==='fixed'?'Fija':'Variable','<span style="color:var(--accent)">'+fmt(amt)+'</span>');
+    const hasOv=ov!==undefined;
+    h+=mItem(phase,key,'mensual',p.emoji+' '+p.name,(p.type==='fixed'?'Fija':'Variable')+(hasOv?' · Importe modificado':''),'<span style="color:'+(hasOv?'var(--purple)':'var(--accent)')+'">'+fmt(amt)+'</span>');
   });
   // Manual transfers
   S.transactions.filter(t=>t.type==='transfer'&&!t.statusKey&&t.date&&t.date.startsWith(ms)).forEach(t=>h+=manualItem(t,'mensual'));
@@ -1205,8 +1208,9 @@ function renderGestion(){window._ma=[];
 
   S.incomes.filter(i=>i.amount>0).forEach(function(inc){
     const key=y+'-'+m+'-income-'+inc.id;
-    const amt=incomeForMonth(inc,m);
-    h+=mItem(phase,key,'gestion',(inc.emoji||'💼')+' '+inc.name,'Ingreso · Día '+(inc.day||1),'<span style="color:var(--green)">+'+fmt(amt)+'</span>');
+    const amt=incomeForMonthWithOverride(inc,m);
+    const hasOv=S.overrides['income-'+inc.id+'-'+m]!==undefined;
+    h+=mItem(phase,key,'gestion',(inc.emoji||'💼')+' '+inc.name,'Ingreso · Día '+(inc.day||1)+(hasOv?' · Importe modificado':''),'<span style="color:'+(hasOv?'var(--purple)':'var(--green)')+'">+'+fmt(amt)+'</span>');
   });
   S.transactions.filter(t=>t.type==='income'&&!t.statusKey&&t.date&&t.date.startsWith(ms)).forEach(t=>h+=manualItem(t,'gestion'));
 
@@ -1215,7 +1219,8 @@ function renderGestion(){window._ma=[];
     const mult=pocketMultForMonth(m);
     const ov=S.overrides['pocket-'+p.id+'-'+m];
     const amt=(ov!==undefined?ov:(p.monthly||0))*mult;
-    h+=mItem(phase,key,'gestion',p.emoji+' '+p.name,'Transfer pocket','<span style="color:var(--accent)">'+fmt(amt)+'</span>');
+    const hasOv=ov!==undefined;
+    h+=mItem(phase,key,'gestion',p.emoji+' '+p.name,'Transfer pocket'+(hasOv?' · Importe modificado':''),'<span style="color:'+(hasOv?'var(--purple)':'var(--accent)')+'">'+fmt(amt)+'</span>');
   });
   S.transactions.filter(t=>t.type==='transfer'&&!t.statusKey&&t.date&&t.date.startsWith(ms)).forEach(t=>h+=manualItem(t,'gestion'));
 
@@ -1414,9 +1419,16 @@ function renderPrevMonths(type,id,y,cm,color){
     if(type==='pocket'){const ov=S.overrides['pocket-'+id+'-'+i];const mult=pocketMultForMonth(i);amt=(ov!==undefined?ov:(S.pockets.find(x=>x.id===id)||{monthly:0}).monthly||0)*mult;}
     else if(type==='income'){const inc=S.incomes.find(x=>x.id===id);amt=inc?incomeForMonthWithOverride(inc,i):0;}
     else{const exp=S.expenses.find(x=>x.id===id);amt=exp?exp.amount:0;}
+    // Check if this month has an override
+    const ovKey=(type==='pocket'?'pocket-'+id:type+'-'+id)+'-'+i;
+    const hasOverride=S.overrides[ovKey]!==undefined;
+    // x2 label for income double months
+    let x2Label='';
+    if(type==='income'){const inc2=S.incomes.find(x=>x.id===id);if(inc2&&inc2.hasDouble&&inc2.doubleMonths&&inc2.doubleMonths.includes(i)&&!hasOverride)x2Label=' <span style="font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-light);padding:2px 5px;border-radius:4px;">x2</span>';}
+    const amtColor=hasOverride?'var(--purple)':color;
     const canEdit=prevEditMode&&!isPast&&!done;
-    let amtH=canEdit?'<input class="pm-input" data-month="'+i+'" data-type="'+type+'" data-id="'+id+'" type="number" value="'+amt+'" step="0.01" min="0">':'<span class="pm-amt" style="color:'+color+'">'+fmt(amt)+'</span>';
-    h+='<div class="pm-item"><div class="'+cls+'">'+cc+'</div><div class="pm-name">'+(isCur?'<strong>':'')+MES[i]+(isCur?'</strong>':'')+'</div>'+amtH+'</div>';
+    let amtH=canEdit?'<input class="pm-input" data-month="'+i+'" data-type="'+type+'" data-id="'+id+'" type="number" value="'+amt+'" step="0.01" min="0">':'<span class="pm-amt" style="color:'+amtColor+';font-weight:'+(hasOverride?'800':'700')+';">'+fmt(amt)+(hasOverride?' ✎':'')+'</span>';
+    h+='<div class="pm-item"><div class="'+cls+'">'+cc+'</div><div class="pm-name">'+(isCur?'<strong>':'')+MES[i]+(isCur?'</strong>':'')+x2Label+'</div>'+amtH+'</div>';
   }
   h+='</div>';
   return h;
