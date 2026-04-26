@@ -545,12 +545,12 @@ input,select{font-family:'Inter',sans-serif;}
     <div class="settings-section-title">Datos</div>
     <div class="settings-item">
       <div class="settings-row">
-        <div><div class="settings-row-label">Exportar CSV</div><div class="settings-row-sub">Copia de seguridad</div></div>
+        <div><div class="settings-row-label">Exportar copia de seguridad</div><div class="settings-row-sub">Guarda pockets, ingresos, gastos, notas y transacciones</div></div>
         <button class="action-btn" style="background:var(--green-light);color:var(--green);" onclick="exportCSV()">📤 Exportar</button>
       </div>
       <div class="settings-row">
-        <div><div class="settings-row-label">Importar CSV</div><div class="settings-row-sub">Restaurar datos</div></div>
-        <label style="cursor:pointer;"><input type="file" accept=".csv" style="display:none" onchange="importCSV(event)"><span class="action-btn" style="background:var(--accent-light);color:var(--accent);display:inline-block;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:700;">📥 Importar</span></label>
+        <div><div class="settings-row-label">Importar copia de seguridad</div><div class="settings-row-sub">Restaura todos los datos desde un backup</div></div>
+        <label style="cursor:pointer;"><input type="file" accept=".json,.csv" style="display:none" onchange="importCSV(event)"><span class="action-btn" style="background:var(--accent-light);color:var(--accent);display:inline-block;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:700;">📥 Importar</span></label>
       </div>
     </div>
   </div>
@@ -1528,26 +1528,64 @@ function scheduleNotif(){
 }
 
 function exportCSV(){
-  const rows=[['ID','Tipo','Cantidad','Descripcion','Fecha','Pocket']];
-  S.transactions.forEach(t=>{const p=t.pocket?S.pockets.find(x=>x.id===t.pocket):null;rows.push([t.id,t.type,t.amount,t.desc||'',t.date||'',p?p.name:'']);});
-  const csv=rows.map(r=>r.map(v=>'"'+v+'"').join(',')).join('\n');
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  // Full state backup as JSON with .csv extension for compatibility
+  const backup={
+    version:2,
+    exportDate:today(),
+    pockets:S.pockets,
+    incomes:S.incomes,
+    expenses:S.expenses,
+    transactions:S.transactions,
+    status:S.status,
+    overrides:S.overrides,
+    notas:S.notas||{},
+    theme:S.theme
+  };
+  const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');a.href=url;a.download='finanzas_'+today()+'.csv';a.click();URL.revokeObjectURL(url);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='finanzas_backup_'+today()+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function importCSV(e){
   const file=e.target.files[0];if(!file)return;
   const r=new FileReader();
   r.onload=function(ev){
-    const lines=ev.target.result.split('\n').slice(1);let added=0;
-    lines.forEach(function(line){
-      const p=line.split(',').map(v=>v.replace(/"/g,'').trim());
-      if(p.length>=4&&p[0]&&!S.transactions.find(t=>t.id===p[0])){
-        S.transactions.push({id:p[0],type:p[1],amount:parseFloat(p[2])||0,desc:p[3],date:p[4],pocket:'',paid:true});added++;
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(data.version===2){
+        // Full JSON backup restore
+        if(!confirm('Esto reemplazará TODOS tus datos actuales con la copia de seguridad. ¿Continuar?'))return;
+        S.pockets=data.pockets||[];
+        S.incomes=data.incomes||[];
+        S.expenses=data.expenses||[];
+        S.transactions=data.transactions||[];
+        S.status=data.status||{};
+        S.overrides=data.overrides||{};
+        S.notas=data.notas||{};
+        if(data.theme)S.theme=data.theme;
+        save();
+        if(S.theme==='dark')document.documentElement.setAttribute('data-theme','dark');
+        else document.documentElement.removeAttribute('data-theme');
+        renderDashboard();
+        alert('Copia de seguridad restaurada correctamente.');
+      } else {
+        // Legacy CSV fallback
+        const lines=ev.target.result.split('\n').slice(1);let added=0;
+        lines.forEach(function(line){
+          const p=line.split(',').map(v=>v.replace(/"/g,'').trim());
+          if(p.length>=4&&p[0]&&!S.transactions.find(t=>t.id===p[0])){
+            S.transactions.push({id:p[0],type:p[1],amount:parseFloat(p[2])||0,desc:p[3],date:p[4],pocket:'',paid:true});added++;
+          }
+        });
+        save();alert(added+' transacciones importadas.');renderDashboard();
       }
-    });
-    save();alert(added+' transacciones importadas.');renderDashboard();
+    }catch(err){
+      alert('Error al leer el archivo. Asegúrate de que es un backup válido.');
+    }
   };
   r.readAsText(file);e.target.value='';
 }
