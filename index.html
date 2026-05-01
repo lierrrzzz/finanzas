@@ -1141,12 +1141,21 @@ function removeManualTx(id,view){
 
 // ─── RENDER MONTH ITEM ────────────────────────────────────────────────────────
 function mItem(phase,key,view,name,sub,amtHtml){
-  let cls='mcheck',content='',onclick='';
-  if(phase==='past'){cls='mcheck past';content='✓';}
-  else if(phase==='future'){cls='mcheck locked';content='—';}
-  else if(S.status[key]){cls='mcheck done';content='✓';onclick='onclick="toggleStatus(\''+key+'\',\''+view+'\')"';}
-  else{cls='mcheck pending';content='';onclick='onclick="toggleStatus(\''+key+'\',\''+view+'\')"';}
-  return '<div class="mitem"><div class="'+cls+'" '+onclick+'>'+content+'</div><div class="minfo"><div class="mname">'+name+'</div><div class="msub">'+sub+'</div></div><div class="mamount">'+amtHtml+'</div></div>';
+  var cls='mcheck',checkContent='',dataAttr='';
+  if(phase==='past'){cls='mcheck past';checkContent='✓';}
+  else if(phase==='future'){cls='mcheck locked';checkContent='—';}
+  else if(S.status[key]){
+    cls='mcheck done';checkContent='✓';
+    var midx=window._mItems?window._mItems.length:0;
+    if(window._mItems)window._mItems.push({key:key,view:view});
+    dataAttr='data-mi="'+midx+'"';
+  } else {
+    cls='mcheck pending';checkContent='';
+    var midx2=window._mItems?window._mItems.length:0;
+    if(window._mItems)window._mItems.push({key:key,view:view});
+    dataAttr='data-mi="'+midx2+'"';
+  }
+  return '<div class="mitem"><div class="'+cls+'" '+dataAttr+'>'+checkContent+'</div><div class="minfo"><div class="mname">'+name+'</div><div class="msub">'+sub+'</div></div><div class="mamount">'+amtHtml+'</div></div>';
 }
 
 function manualItemEditable(t,view){
@@ -1201,7 +1210,7 @@ function changeViewMonth(d){
 }
 function resetViewMonth(){vYear=nowY();vMonth=nowM();renderMensual();}
 
-function renderMensual(){window._ma=[];
+function renderMensual(){window._ma=[];window._mItems=[];
   const y=vYear,m=vMonth;
   document.getElementById('mensualLabel').textContent=MES[m]+' '+y;
   const isToday=(y===nowY()&&m===nowM());
@@ -1281,7 +1290,7 @@ function changeGestionMonth(d){
 }
 function resetGestionMonth(){gYear=nowY();gMonth=nowM();renderGestion();}
 
-function renderGestion(){window._ma=[];window._gActions=[];window._gEdit=null;
+function renderGestion(){window._ma=[];window._gActions=[];window._gEdit=null;window._mItems=[];
   const y=gYear,m=gMonth;
   document.getElementById('gestionLabel').textContent=MES[m]+' '+y;
   const isToday=(y===nowY()&&m===nowM());
@@ -1885,19 +1894,19 @@ function initDelegation(){
   var mc=document.getElementById('mensualContent');
   if(mc)mc.addEventListener('click',function(e){
     var el=e.target.closest('[data-ma]');
-    if(el){var idx=parseInt(el.getAttribute('data-ma'));_ma_call(idx);}
+    if(el){_ma_call(parseInt(el.getAttribute('data-ma')));return;}
+    var el2=e.target.closest('[data-mi]');
+    if(el2){var a=window._mItems[parseInt(el2.getAttribute('data-mi'))];if(a)toggleStatus(a.key,a.view);}
   });
   // Gestion container
   var gc=document.getElementById('gestionContent');
   if(gc)gc.addEventListener('click',function(e){
     var el=e.target.closest('[data-ma]');
-    if(el){var idx=parseInt(el.getAttribute('data-ma'));_ma_call(idx);}
-    var el2=e.target.closest('[data-ga]');
-    if(el2){var idx2=parseInt(el2.getAttribute('data-ga'));_ga_call(idx2);}
-    var el3=e.target.closest('#gSaveBtn');
-    if(el3)saveGEdit();
-    var el4=e.target.closest('#gCancelBtn');
-    if(el4)cancelGEdit();
+    if(el){_ma_call(parseInt(el.getAttribute('data-ma')));return;}
+    var el2=e.target.closest('[data-mi]');
+    if(el2){var a=window._mItems[parseInt(el2.getAttribute('data-mi'))];if(a)toggleStatus(a.key,a.view);return;}
+    var el3=e.target.closest('[data-ga]');
+    if(el3){_ga_call(parseInt(el3.getAttribute('data-ga')));return;}
   });
 }
 
