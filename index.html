@@ -1255,6 +1255,10 @@ function renderMensual(){window._ma=[];
   S.transactions.filter(t=>t.type==='expense'&&!t.statusKey&&t.date&&t.date.startsWith(ms)).forEach(t=>h+=manualItem(t,'mensual'));
 
   document.getElementById('mensualContent').innerHTML=h;
+  document.getElementById('mensualContent').querySelectorAll('[data-ma]').forEach(function(el){
+    var idx=parseInt(el.getAttribute('data-ma'));
+    el.addEventListener('click',function(){_ma_call(idx);});
+  });
 }
 
 // ─── GESTIONAR ────────────────────────────────────────────────────────────────
@@ -1321,11 +1325,21 @@ function renderGestion(){window._ma=[];window._gActions=[];window._gEdit=null;
   S.transactions.filter(t=>t.type==='expense'&&!t.statusKey&&t.date&&t.date.startsWith(ms)).forEach(t=>h+=manualItemEditable(t,'gestion'));
 
   document.getElementById('gestionContent').innerHTML=h;
-  // Attach event listeners for edit buttons (Safari mobile fix)
+  // Attach ALL event listeners after render (Safari mobile fix)
   var saveBtn=document.getElementById('gSaveBtn');
   var cancelBtn=document.getElementById('gCancelBtn');
   if(saveBtn)saveBtn.addEventListener('click',saveGEdit);
   if(cancelBtn)cancelBtn.addEventListener('click',cancelGEdit);
+  // Attach edit pencil buttons via _gActions
+  document.getElementById('gestionContent').querySelectorAll('[data-ga]').forEach(function(btn){
+    var idx=parseInt(btn.getAttribute('data-ga'));
+    btn.addEventListener('click',function(){_ga_call(idx);});
+  });
+  // Attach tick buttons via _ma
+  document.getElementById('gestionContent').querySelectorAll('[data-ma]').forEach(function(el){
+    var idx=parseInt(el.getAttribute('data-ma'));
+    el.addEventListener('click',function(){_ma_call(idx);});
+  });
 }
 
 // ─── HISTORIAL ────────────────────────────────────────────────────────────────
@@ -1713,17 +1727,32 @@ function openNotaEditor(idx){
   document.getElementById('notaTitulo').value=n?n.titulo||'':'';
   document.getElementById('notaCapital').value=n?n.capital||'':'';
   document.getElementById('notaTexto').value=n?n.texto||'':'';
-  // Render pocket inputs
+  // Render pocket inputs with checkbox to select which to include
   var pocketAmounts={};
-  if(n&&n.pockets)n.pockets.forEach(function(pp){pocketAmounts[pp.id]=pp.amount;});
-  document.getElementById('notaEditorPockets').innerHTML=S.pockets.map(function(p){
+  var selectedPockets=new Set();
+  if(n&&n.pockets)n.pockets.forEach(function(pp){pocketAmounts[pp.id]=pp.amount;selectedPockets.add(pp.id);});
+  var pContainer=document.getElementById('notaEditorPockets');
+  pContainer.innerHTML=S.pockets.map(function(p){
+    var isSel=selectedPockets.has(p.id);
     var val=pocketAmounts[p.id]||'';
-    return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">'
+    return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;" id="np-row-'+p.id+'">'
+      +'<input type="checkbox" id="np-chk-'+p.id+'" '+(isSel?'checked':'')+' style="width:18px;height:18px;accent-color:var(--accent);flex-shrink:0;">'
       +'<span style="font-size:18px;">'+p.emoji+'</span>'
       +'<span style="flex:1;font-size:14px;font-weight:600;">'+p.name+'</span>'
-      +'<input class="fi" type="number" id="np-'+p.id+'" value="'+val+'" placeholder="0.00" inputmode="decimal" step="0.01" style="width:110px;text-align:right;">'
+      +'<input class="fi" type="number" id="np-'+p.id+'" value="'+val+'" placeholder="0.00" inputmode="decimal" step="0.01" style="width:110px;text-align:right;display:'+(isSel?'block':'none')+'">'
       +'</div>';
   }).join('');
+  // Show/hide amount input based on checkbox
+  S.pockets.forEach(function(p){
+    var chk=document.getElementById('np-chk-'+p.id);
+    var inp=document.getElementById('np-'+p.id);
+    if(chk&&inp){
+      chk.addEventListener('change',function(){
+        inp.style.display=chk.checked?'block':'none';
+        if(!chk.checked)inp.value='';
+      });
+    }
+  });
   // Attach save and back listeners
   var saveBtn=document.getElementById('notaEditorSaveBtn');
   var backBtn=document.getElementById('notaEditorBackBtn');
