@@ -221,6 +221,15 @@ input,select{font-family:'Inter',sans-serif;}
 
 .empty{text-align:center;padding:48px 20px;color:var(--muted);}
 .g-edit-btn{padding:4px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:700;color:var(--accent);margin-left:6px;}
+.nota-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px;}
+.nota-card-title{font-size:15px;font-weight:700;margin-bottom:6px;}
+.nota-card-capital{font-size:13px;color:var(--accent);font-weight:600;margin-bottom:8px;}
+.nota-card-pockets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+.nota-pocket-pill{padding:4px 10px;background:var(--accent-light);color:var(--accent);border-radius:20px;font-size:12px;font-weight:600;}
+.nota-card-text{font-size:13px;color:var(--muted);line-height:1.6;white-space:pre-wrap;}
+.nota-card-date{font-size:11px;color:var(--muted);margin-top:8px;}
+.nota-card-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px;}
+.nota-del-btn{font-size:12px;font-weight:700;color:var(--red);padding:5px 10px;background:var(--red-light);border-radius:7px;}
 .g-inline-edit{display:flex;align-items:center;gap:6px;}
 .g-inline-input{width:80px;background:var(--bg);border:1.5px solid var(--accent);border-radius:6px;padding:3px 7px;font-size:13px;font-weight:700;color:var(--text);text-align:right;outline:none;}
 .g-save-btn{padding:4px 8px;background:var(--green);border-radius:6px;font-size:11px;font-weight:700;color:#fff;}
@@ -507,22 +516,26 @@ input,select{font-family:'Inter',sans-serif;}
 <!-- PAGE: NOTAS -->
 <div class="page" id="pageNotas">
   <div class="topbar">
-    <button class="icon-btn" onclick="goBack()">←</button>
+    <button class="icon-btn" id="notasBackBtn">←</button>
     <div class="topbar-title">Notas</div>
-    <button class="edit-btn" id="notasSaveBtn" onclick="saveNotas()" style="background:var(--green-light);color:var(--green);padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;">Guardar</button>
+    <button class="edit-btn" id="notasNewBtn" style="background:var(--accent-light);color:var(--accent);padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;">+ Nueva</button>
+  </div>
+  <div id="notasContent" style="padding:16px 20px;"></div>
+</div>
+
+<!-- PAGE: NOTA EDITOR -->
+<div class="page" id="pageNotaEditor">
+  <div class="topbar">
+    <button class="icon-btn" id="notaEditorBackBtn">←</button>
+    <div class="topbar-title" id="notaEditorTitle">Nueva Nota</div>
+    <button class="edit-btn" id="notaEditorSaveBtn" style="background:var(--green-light);color:var(--green);padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;">Guardar</button>
   </div>
   <div style="padding:16px 20px;">
-    <div class="fg">
-      <label class="fl">Capital esperado</label>
-      <input class="fi" type="number" id="notasCapital" placeholder="0.00" inputmode="decimal" step="0.01">
-    </div>
-    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:10px;margin-top:8px;">Distribución por pocket</div>
-    <div id="notasPockets"></div>
-    <button onclick="renderNotasPockets()" style="width:100%;padding:11px;background:var(--bg);border:1.5px dashed var(--border);border-radius:var(--radius-sm);font-size:13px;color:var(--muted);font-weight:600;margin-top:4px;">+ Añadir pocket</button>
-  </div>
-  <div style="padding:0 20px 16px;">
-    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:10px;">Notas libres</div>
-    <textarea class="fi" id="notasText" placeholder="Escribe aquí tus notas..." style="min-height:140px;resize:none;line-height:1.6;"></textarea>
+    <div class="fg"><label class="fl">Título</label><input class="fi" type="text" id="notaTitulo" placeholder="Ej: Plan mayo..."></div>
+    <div class="fg"><label class="fl">Capital esperado (€)</label><input class="fi" type="number" id="notaCapital" placeholder="0.00" inputmode="decimal" step="0.01"></div>
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:10px;">Pockets y cantidades</div>
+    <div id="notaEditorPockets"></div>
+    <div class="fg" style="margin-top:12px;"><label class="fl">Notas</label><textarea class="fi" id="notaTexto" placeholder="Escribe aquí..." style="min-height:120px;resize:none;line-height:1.6;"></textarea></div>
   </div>
 </div>
 
@@ -647,6 +660,7 @@ function navTo(id){
   if(id==='Historial'){renderHistorial();}
   if(id==='Prevision'){renderPrevSelect();}
   if(id==='Notas'){initNotas();}
+  if(id==='NotaEditor'){}
   if(id==='Ajustes'){renderAjustes();}
 }
 
@@ -1090,7 +1104,7 @@ function toggleStatus(key,view){
   renderDashboard();
 }
 
-function _ma_call(i){if(window._ma&&window._ma[i]){var a=window._ma[i];if(a.fn==='toggleManualTx')toggleManualTx(a.id,a.view);else if(a.fn==='toggleStatus')toggleStatus(a.key,a.view);}}
+function _ma_call(i){if(window._ma&&window._ma[i]){var a=window._ma[i];if(a.fn==='toggleManualTx')toggleManualTx(a.id,a.view);else if(a.fn==='toggleStatus')toggleStatus(a.key,a.view);else if(a.fn==='editTx')openEditTx(a.id);}}
 function toggleManualTx(id,view){
   const t=S.transactions.find(x=>x.id===id);
   if(!t)return;
@@ -1118,6 +1132,29 @@ function mItem(phase,key,view,name,sub,amtHtml){
   else if(S.status[key]){cls='mcheck done';content='✓';onclick='onclick="toggleStatus(\''+key+'\',\''+view+'\')"';}
   else{cls='mcheck pending';content='';onclick='onclick="toggleStatus(\''+key+'\',\''+view+'\')"';}
   return '<div class="mitem"><div class="'+cls+'" '+onclick+'>'+content+'</div><div class="minfo"><div class="mname">'+name+'</div><div class="msub">'+sub+'</div></div><div class="mamount">'+amtHtml+'</div></div>';
+}
+
+function manualItemEditable(t,view){
+  var d=new Date(t.date);
+  var dayStr='Día '+d.getDate()+' · Manual';
+  var sign=t.type==='income'?'+':t.type==='transfer'?'':'−';
+  var color=t.type==='income'?'var(--green)':t.type==='transfer'?'var(--accent)':'var(--red)';
+  var icon=t.type==='income'?'💰':t.type==='transfer'?'⇄':'📤';
+  var isPaid=t.paid===true;
+  var checkCls=isPaid?'mcheck done':'mcheck pending';
+  var checkTxt=isPaid?'✓':'';
+  var idx=window._ma?window._ma.length:0;
+  if(window._ma)window._ma.push({fn:'toggleManualTx',id:t.id,view:view});
+  var editIdx=window._ma?window._ma.length:0;
+  if(window._ma)window._ma.push({fn:'editTx',id:t.id});
+  return '<div class="mitem">'
+    +'<div class="'+checkCls+'" onclick="_ma_call('+idx+')">'+checkTxt+'</div>'
+    +'<div class="minfo"><div class="mname">'+icon+' '+(t.desc||'Movimiento')+'</div><div class="msub">'+dayStr+'</div></div>'
+    +'<div style="display:flex;align-items:center;gap:6px;">'
+    +'<div class="mamount" style="color:'+color+'">'+sign+fmt(t.amount)+'</div>'
+    +'<button class="g-edit-btn" onclick="_ma_call('+editIdx+')">✏️</button>'
+    +'</div>'
+    +'</div>';
 }
 
 function manualItem(t,view){
@@ -1250,11 +1287,11 @@ function renderGestion(){window._ma=[];window._gActions=[];window._gEdit=null;
     const hasOv=S.overrides['income-'+inc.id+'-'+m]!==undefined;
     const isEditing=window._gEdit&&window._gEdit.type==='income'&&window._gEdit.id===inc.id&&window._gEdit.month===m;
     const amtHtml=isEditing
-      ?'<div class="g-inline-edit"><input class="g-inline-input" id="gEditInput" type="number" value="'+amt+'" step="0.01" min="0"><button class="g-save-btn" onclick="saveGEdit()">OK</button><button class="g-edit-btn" onclick="cancelGEdit()">✕</button></div>'
+      ?'<div class="g-inline-edit"><input class="g-inline-input" id="gEditInput" type="number" value="'+amt+'" step="0.01" min="0"><button class="g-save-btn" id="gSaveBtn">OK</button><button class="g-edit-btn" id="gCancelBtn">✕</button></div>'
       :(function(){var gi=window._gActions.length;window._gActions.push({type:'income',id:inc.id,month:m,amt:amt});return '<div class="g-inline-edit"><span style="color:'+(hasOv?'var(--purple)':'var(--green)')+'">+'+fmt(amt)+'</span>'+(phase!=='past'?'<button class="g-edit-btn" onclick="_ga_call('+gi+')">✏️</button>':'')+'</div>';})();
     h+=mItem(phase,key,'gestion',(inc.emoji||'💼')+' '+inc.name,'Ingreso · Día '+(inc.day||1)+(hasOv?' · ✎':''),amtHtml);
   });
-  S.transactions.filter(t=>t.type==='income'&&!t.statusKey&&t.date&&t.date.startsWith(ms)).forEach(t=>h+=manualItem(t,'gestion'));
+  S.transactions.filter(t=>t.type==='income'&&!t.statusKey&&t.date&&t.date.startsWith(ms)).forEach(t=>h+=manualItemEditable(t,'gestion'));
 
   S.pockets.filter(p=>p.monthly>0).forEach(function(p){
     const key=y+'-'+m+'-pocket-'+p.id;
@@ -1264,11 +1301,11 @@ function renderGestion(){window._ma=[];window._gActions=[];window._gEdit=null;
     const hasOv=ov!==undefined;
     const isEditing=window._gEdit&&window._gEdit.type==='pocket'&&window._gEdit.id===p.id&&window._gEdit.month===m;
     const amtHtml=isEditing
-      ?'<div class="g-inline-edit"><input class="g-inline-input" id="gEditInput" type="number" value="'+amt+'" step="0.01" min="0"><button class="g-save-btn" onclick="saveGEdit()">OK</button><button class="g-edit-btn" onclick="cancelGEdit()">✕</button></div>'
+      ?'<div class="g-inline-edit"><input class="g-inline-input" id="gEditInput" type="number" value="'+amt+'" step="0.01" min="0"><button class="g-save-btn" id="gSaveBtn">OK</button><button class="g-edit-btn" id="gCancelBtn">✕</button></div>'
       :(function(){var gi=window._gActions.length;window._gActions.push({type:'pocket',id:p.id,month:m,amt:amt});return '<div class="g-inline-edit"><span style="color:'+(hasOv?'var(--purple)':'var(--accent)')+'">'+fmt(amt)+'</span>'+(phase!=='past'?'<button class="g-edit-btn" onclick="_ga_call('+gi+')">✏️</button>':'')+'</div>';})();
     h+=mItem(phase,key,'gestion',p.emoji+' '+p.name,'Transfer pocket'+(hasOv?' · ✎':''),amtHtml);
   });
-  S.transactions.filter(t=>t.type==='transfer'&&!t.statusKey&&t.date&&t.date.startsWith(ms)).forEach(t=>h+=manualItem(t,'gestion'));
+  S.transactions.filter(t=>t.type==='transfer'&&!t.statusKey&&t.date&&t.date.startsWith(ms)).forEach(t=>h+=manualItemEditable(t,'gestion'));
 
   S.expenses.forEach(function(exp){
     const key=y+'-'+m+'-expense-'+exp.id;
@@ -1277,13 +1314,18 @@ function renderGestion(){window._ma=[];window._gActions=[];window._gEdit=null;
     const hasOvE=ovE!==undefined;
     const isEditing=window._gEdit&&window._gEdit.type==='expense'&&window._gEdit.id===exp.id&&window._gEdit.month===m;
     const amtHtml=isEditing
-      ?'<div class="g-inline-edit"><input class="g-inline-input" id="gEditInput" type="number" value="'+amtE+'" step="0.01" min="0"><button class="g-save-btn" onclick="saveGEdit()">OK</button><button class="g-edit-btn" onclick="cancelGEdit()">✕</button></div>'
+      ?'<div class="g-inline-edit"><input class="g-inline-input" id="gEditInput" type="number" value="'+amtE+'" step="0.01" min="0"><button class="g-save-btn" id="gSaveBtn">OK</button><button class="g-edit-btn" id="gCancelBtn">✕</button></div>'
       :(function(){var gi=window._gActions.length;window._gActions.push({type:'expense',id:exp.id,month:m,amt:amtE});return '<div class="g-inline-edit"><span style="color:'+(hasOvE?'var(--purple)':'var(--red)')+'">−'+fmt(amtE)+'</span>'+(phase!=='past'?'<button class="g-edit-btn" onclick="_ga_call('+gi+')">✏️</button>':'')+'</div>';})();
     h+=mItem(phase,key,'gestion',(exp.emoji||'📦')+' '+exp.name,'Gasto · Día '+(exp.day||1)+(hasOvE?' · ✎':''),amtHtml);
   });
-  S.transactions.filter(t=>t.type==='expense'&&!t.statusKey&&t.date&&t.date.startsWith(ms)).forEach(t=>h+=manualItem(t,'gestion'));
+  S.transactions.filter(t=>t.type==='expense'&&!t.statusKey&&t.date&&t.date.startsWith(ms)).forEach(t=>h+=manualItemEditable(t,'gestion'));
 
   document.getElementById('gestionContent').innerHTML=h;
+  // Attach event listeners for edit buttons (Safari mobile fix)
+  var saveBtn=document.getElementById('gSaveBtn');
+  var cancelBtn=document.getElementById('gCancelBtn');
+  if(saveBtn)saveBtn.addEventListener('click',saveGEdit);
+  if(cancelBtn)cancelBtn.addEventListener('click',cancelGEdit);
 }
 
 // ─── HISTORIAL ────────────────────────────────────────────────────────────────
@@ -1607,42 +1649,104 @@ function saveGEdit(){
 function cancelGEdit(){window._gEdit=null;renderGestion();}
 
 // ─── NOTAS ───────────────────────────────────────────────────────────────────
+let editingNotaId=null;
+
 function initNotas(){
-  document.getElementById('notasCapital').value=S.notas&&S.notas.capital?S.notas.capital:'';
-  document.getElementById('notasText').value=S.notas&&S.notas.text?S.notas.text:'';
-  renderNotasPockets();
+  if(!S.notas)S.notas={lista:[]};
+  if(!S.notas.lista)S.notas.lista=[];
+  renderNotasList();
+  // Attach button listeners
+  var backBtn=document.getElementById('notasBackBtn');
+  var newBtn=document.getElementById('notasNewBtn');
+  if(backBtn)backBtn.addEventListener('click',function(){goBack();});
+  if(newBtn)newBtn.addEventListener('click',function(){openNotaEditor(null);});
 }
 
-function renderNotasPockets(){
-  const container=document.getElementById('notasPockets');
-  const pocketAmounts=(S.notas&&S.notas.pockets)||{};
-  container.innerHTML=S.pockets.map(function(p){
-    const val=pocketAmounts[p.id]||'';
+function renderNotasList(){
+  var el=document.getElementById('notasContent');
+  var lista=S.notas.lista||[];
+  if(!lista.length){
+    el.innerHTML='<div class="empty"><div class="empty-icon">📝</div><div class="empty-text">Sin notas. Pulsa + Nueva para crear una.</div></div>';
+    return;
+  }
+  el.innerHTML=lista.map(function(n,i){
+    var pocketPills=(n.pockets||[]).map(function(pp){
+      var p=S.pockets.find(function(x){return x.id===pp.id;});
+      if(!p)return '';
+      return '<span class="nota-pocket-pill">'+p.emoji+' '+p.name+': '+fmt(pp.amount)+'</span>';
+    }).join('');
+    return '<div class="nota-card">'
+      +'<div class="nota-card-title">'+(n.titulo||'Sin título')+'</div>'
+      +(n.capital?'<div class="nota-card-capital">Capital esperado: '+fmt(n.capital)+'</div>':'')
+      +(pocketPills?'<div class="nota-card-pockets">'+pocketPills+'</div>':'')
+      +(n.texto?'<div class="nota-card-text">'+n.texto+'</div>':'')
+      +'<div class="nota-card-date">'+(n.date||'')+'</div>'
+      +'<div class="nota-card-actions">'
+      +'<button class="nota-del-btn" data-idx="'+i+'">Eliminar</button>'
+      +'<button class="g-edit-btn" data-idx="'+i+'" style="margin-left:0;">✏️ Editar</button>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+  // Attach delete and edit listeners
+  el.querySelectorAll('.nota-del-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var idx=parseInt(btn.getAttribute('data-idx'));
+      if(!confirm('¿Eliminar esta nota?'))return;
+      S.notas.lista.splice(idx,1);
+      save();renderNotasList();
+    });
+  });
+  el.querySelectorAll('.g-edit-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var idx=parseInt(btn.getAttribute('data-idx'));
+      openNotaEditor(idx);
+    });
+  });
+}
+
+function openNotaEditor(idx){
+  editingNotaId=idx;
+  var n=idx!==null?S.notas.lista[idx]:null;
+  pageStack.push(curPage);
+  showPage('NotaEditor');
+  document.getElementById('notaEditorTitle').textContent=n?'Editar Nota':'Nueva Nota';
+  document.getElementById('notaTitulo').value=n?n.titulo||'':'';
+  document.getElementById('notaCapital').value=n?n.capital||'':'';
+  document.getElementById('notaTexto').value=n?n.texto||'':'';
+  // Render pocket inputs
+  var pocketAmounts={};
+  if(n&&n.pockets)n.pockets.forEach(function(pp){pocketAmounts[pp.id]=pp.amount;});
+  document.getElementById('notaEditorPockets').innerHTML=S.pockets.map(function(p){
+    var val=pocketAmounts[p.id]||'';
     return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">'
       +'<span style="font-size:18px;">'+p.emoji+'</span>'
       +'<span style="flex:1;font-size:14px;font-weight:600;">'+p.name+'</span>'
-      +'<input class="fi" type="number" id="nota-pocket-'+p.id+'" value="'+val+'" placeholder="0.00" inputmode="decimal" step="0.01" style="width:120px;text-align:right;">'
+      +'<input class="fi" type="number" id="np-'+p.id+'" value="'+val+'" placeholder="0.00" inputmode="decimal" step="0.01" style="width:110px;text-align:right;">'
       +'</div>';
   }).join('');
-  if(!S.pockets.length){
-    container.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 0;">Sin pockets configurados. Créalos en Mis Activos.</div>';
-  }
+  // Attach save and back listeners
+  var saveBtn=document.getElementById('notaEditorSaveBtn');
+  var backBtn=document.getElementById('notaEditorBackBtn');
+  if(saveBtn){saveBtn.replaceWith(saveBtn.cloneNode(true));document.getElementById('notaEditorSaveBtn').addEventListener('click',saveNota);}
+  if(backBtn){backBtn.replaceWith(backBtn.cloneNode(true));document.getElementById('notaEditorBackBtn').addEventListener('click',function(){goBack();initNotas();});}
 }
 
-function saveNotas(){
-  const capital=parseFloat(document.getElementById('notasCapital').value)||0;
-  const text=document.getElementById('notasText').value;
-  const pockets={};
+function saveNota(){
+  var titulo=document.getElementById('notaTitulo').value.trim();
+  var capital=parseFloat(document.getElementById('notaCapital').value)||0;
+  var texto=document.getElementById('notaTexto').value.trim();
+  var pockets=[];
   S.pockets.forEach(function(p){
-    const inp=document.getElementById('nota-pocket-'+p.id);
-    if(inp){const v=parseFloat(inp.value);if(!isNaN(v)&&v>0)pockets[p.id]=v;}
+    var inp=document.getElementById('np-'+p.id);
+    if(inp){var v=parseFloat(inp.value);if(!isNaN(v)&&v>0)pockets.push({id:p.id,amount:v});}
   });
-  S.notas={capital,text,pockets};
+  var nota={titulo:titulo||'Sin título',capital:capital,texto:texto,pockets:pockets,date:new Date().toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'})};
+  if(!S.notas.lista)S.notas.lista=[];
+  if(editingNotaId!==null)S.notas.lista[editingNotaId]=nota;
+  else S.notas.lista.push(nota);
   save();
-  // Flash save button
-  const btn=document.getElementById('notasSaveBtn');
-  btn.textContent='✓ Guardado';
-  setTimeout(function(){btn.textContent='Guardar';},1500);
+  goBack();
+  initNotas();
 }
 
 // ─── AJUSTES ─────────────────────────────────────────────────────────────────
