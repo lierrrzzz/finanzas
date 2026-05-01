@@ -1526,6 +1526,36 @@ function togglePrevEdit(){
 function saveStartDate(){
   const val=document.getElementById('startDateInput').value;
   S.startDate=val||null;
+  if(S.startDate){
+    // Auto-mark all past months from start date up to (not including) current month
+    const start=new Date(S.startDate);
+    const startY=start.getFullYear();
+    const startM=start.getMonth();
+    const curY=nowY();
+    const curM=nowM();
+    // Loop through all months from start to last month
+    for(var y=startY;y<=curY;y++){
+      var mStart=(y===startY)?startM:0;
+      var mEnd=(y===curY)?curM-1:11;
+      for(var m=mStart;m<=mEnd;m++){
+        // Mark all pockets, incomes and expenses for this month
+        S.pockets.forEach(function(p){
+          if(p.monthly>0){
+            var key=y+'-'+m+'-pocket-'+p.id;
+            if(!S.status[key])S.status[key]=true;
+          }
+        });
+        S.incomes.filter(function(i){return i.amount>0;}).forEach(function(inc){
+          var key=y+'-'+m+'-income-'+inc.id;
+          if(!S.status[key])S.status[key]=true;
+        });
+        S.expenses.forEach(function(exp){
+          var key=y+'-'+m+'-expense-'+exp.id;
+          if(!S.status[key])S.status[key]=true;
+        });
+      }
+    }
+  }
   save();
   renderMensual();
   renderGestion();
