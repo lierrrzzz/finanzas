@@ -400,6 +400,21 @@ input,select{font-family:'Inter',sans-serif;}
   </div>
 </div>
 
+<!-- MODAL: EDIT AMOUNT (permanent in DOM) -->
+<div class="modal-overlay" id="mEditAmt" onclick="if(event.target===this)closeModal('mEditAmt')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="mEditAmtTitle">Editar importe</div>
+    <div class="fg">
+      <label class="fl">Importe (€)</label>
+      <input class="fi" type="number" id="mEditAmtInput" inputmode="decimal" step="0.01" min="0">
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px;" id="mEditAmtDefault"></div>
+    <button class="btn-p" id="mEditAmtSave">Guardar</button>
+    <button class="btn-s" id="mEditAmtCancel">Cancelar</button>
+  </div>
+</div>
+
 <!-- MODAL: EDIT TX -->
 <div class="modal-overlay" id="mEditTx" onclick="if(event.target===this)closeModal('mEditTx')">
   <div class="modal">
@@ -1285,10 +1300,7 @@ function renderGestion(){window._ma=[];window._gActions=[];window._gEdit=null;
     const key=y+'-'+m+'-income-'+inc.id;
     const amt=incomeForMonthWithOverride(inc,m);
     const hasOv=S.overrides['income-'+inc.id+'-'+m]!==undefined;
-    const isEditing=window._gEdit&&window._gEdit.type==='income'&&window._gEdit.id===inc.id&&window._gEdit.month===m;
-    const amtHtml=isEditing
-      ?'<div class="g-inline-edit"><input class="g-inline-input" id="gEditInput" type="number" value="'+amt+'" step="0.01" min="0"><button class="g-save-btn" id="gSaveBtn">OK</button><button class="g-edit-btn" id="gCancelBtn">✕</button></div>'
-      :(function(){var gi=window._gActions.length;window._gActions.push({type:'income',id:inc.id,month:m,amt:amt});return '<div class="g-inline-edit"><span style="color:'+(hasOv?'var(--purple)':'var(--green)')+'">+'+fmt(amt)+'</span>'+(phase!=='past'?'<button class="g-edit-btn" data-ga="'+gi+'">✏️</button>':'')+'</div>';})();
+    const amtHtml=(function(){var gi=window._gActions.length;window._gActions.push({type:'income',id:inc.id,month:m,amt:amt});return '<div class="g-inline-edit"><span style="color:'+(hasOv?'var(--purple)':'var(--green)')+'">+'+fmt(amt)+'</span><button class="g-edit-btn" data-ga="'+gi+'">✏️</button></div>';})();
     h+=mItem(phase,key,'gestion',(inc.emoji||'💼')+' '+inc.name,'Ingreso · Día '+(inc.day||1)+(hasOv?' · ✎':''),amtHtml);
   });
   S.transactions.filter(t=>t.type==='income'&&!t.statusKey&&t.date&&t.date.startsWith(ms)).forEach(t=>h+=manualItemEditable(t,'gestion'));
@@ -1299,10 +1311,7 @@ function renderGestion(){window._ma=[];window._gActions=[];window._gEdit=null;
     const ov=S.overrides['pocket-'+p.id+'-'+m];
     const amt=(ov!==undefined?ov:(p.monthly||0))*mult;
     const hasOv=ov!==undefined;
-    const isEditing=window._gEdit&&window._gEdit.type==='pocket'&&window._gEdit.id===p.id&&window._gEdit.month===m;
-    const amtHtml=isEditing
-      ?'<div class="g-inline-edit"><input class="g-inline-input" id="gEditInput" type="number" value="'+amt+'" step="0.01" min="0"><button class="g-save-btn" id="gSaveBtn">OK</button><button class="g-edit-btn" id="gCancelBtn">✕</button></div>'
-      :(function(){var gi=window._gActions.length;window._gActions.push({type:'pocket',id:p.id,month:m,amt:amt});return '<div class="g-inline-edit"><span style="color:'+(hasOv?'var(--purple)':'var(--accent)')+'">'+fmt(amt)+'</span>'+(phase!=='past'?'<button class="g-edit-btn" data-ga="'+gi+'">✏️</button>':'')+'</div>';})();
+    const amtHtml=(function(){var gi=window._gActions.length;window._gActions.push({type:'pocket',id:p.id,month:m,amt:amt});return '<div class="g-inline-edit"><span style="color:'+(hasOv?'var(--purple)':'var(--accent)')+'">'+fmt(amt)+'</span><button class="g-edit-btn" data-ga="'+gi+'">✏️</button></div>';})();
     h+=mItem(phase,key,'gestion',p.emoji+' '+p.name,'Transfer pocket'+(hasOv?' · ✎':''),amtHtml);
   });
   S.transactions.filter(t=>t.type==='transfer'&&!t.statusKey&&t.date&&t.date.startsWith(ms)).forEach(t=>h+=manualItemEditable(t,'gestion'));
@@ -1312,10 +1321,7 @@ function renderGestion(){window._ma=[];window._gActions=[];window._gEdit=null;
     const ovE=S.overrides['expense-'+exp.id+'-'+m];
     const amtE=ovE!==undefined?ovE:exp.amount;
     const hasOvE=ovE!==undefined;
-    const isEditing=window._gEdit&&window._gEdit.type==='expense'&&window._gEdit.id===exp.id&&window._gEdit.month===m;
-    const amtHtml=isEditing
-      ?'<div class="g-inline-edit"><input class="g-inline-input" id="gEditInput" type="number" value="'+amtE+'" step="0.01" min="0"><button class="g-save-btn" id="gSaveBtn">OK</button><button class="g-edit-btn" id="gCancelBtn">✕</button></div>'
-      :(function(){var gi=window._gActions.length;window._gActions.push({type:'expense',id:exp.id,month:m,amt:amtE});return '<div class="g-inline-edit"><span style="color:'+(hasOvE?'var(--purple)':'var(--red)')+'">−'+fmt(amtE)+'</span>'+(phase!=='past'?'<button class="g-edit-btn" data-ga="'+gi+'">✏️</button>':'')+'</div>';})();
+    const amtHtml=(function(){var gi=window._gActions.length;window._gActions.push({type:'expense',id:exp.id,month:m,amt:amtE});return '<div class="g-inline-edit"><span style="color:'+(hasOvE?'var(--purple)':'var(--red)')+'">−'+fmt(amtE)+'</span><button class="g-edit-btn" data-ga="'+gi+'">✏️</button></div>';})();
     h+=mItem(phase,key,'gestion',(exp.emoji||'📦')+' '+exp.name,'Gasto · Día '+(exp.day||1)+(hasOvE?' · ✎':''),amtHtml);
   });
   S.transactions.filter(t=>t.type==='expense'&&!t.statusKey&&t.date&&t.date.startsWith(ms)).forEach(t=>h+=manualItemEditable(t,'gestion'));
@@ -1614,34 +1620,41 @@ function isSamePeriod(y,m){
 }
 
 // ─── GESTIONAR EDIT ───────────────────────────────────────────────────────────
-function _ga_call(i){if(window._gActions&&window._gActions[i]){var a=window._gActions[i];openGEdit(a.type,a.id,a.month,a.amt);}}
-function openGEdit(type,id,month,currentAmt){
+function _ga_call(i){if(window._gActions&&window._gActions[i]){var a=window._gActions[i];openAmtModal(a.type,a.id,a.month,a.amt);}}
+function openAmtModal(type,id,month,currentAmt){
   window._gEdit={type:type,id:id,month:month};
-  renderGestion();
+  // Calculate default
+  var def=0;
+  if(type==='pocket'){var p=S.pockets.find(function(x){return x.id===id;});def=(p?p.monthly||0:0)*pocketMultForMonth(month);}
+  else if(type==='income'){var inc=S.incomes.find(function(x){return x.id===id;});if(inc)def=(inc.isSalary&&inc.hasDouble&&inc.doubleMonths&&inc.doubleMonths.includes(month))?inc.amount*2:inc.amount;}
+  else if(type==='expense'){var exp=S.expenses.find(function(x){return x.id===id;});def=exp?exp.amount:0;}
+  var names={pocket:'Transfer a pocket',income:'Ingreso',expense:'Gasto'};
+  document.getElementById('mEditAmtTitle').textContent='Editar '+names[type];
+  document.getElementById('mEditAmtInput').value=currentAmt;
+  document.getElementById('mEditAmtDefault').textContent='Importe base: '+fmt(def)+'. Déjalo igual para quitar el override.';
+  openModal('mEditAmt');
 }
 function saveGEdit(){
   if(!window._gEdit)return;
-  const inp=document.getElementById('gEditInput');
-  if(!inp)return;
-  const val=parseFloat(inp.value);
-  const g=window._gEdit;
+  var val=parseFloat(document.getElementById('mEditAmtInput').value);
+  var g=window._gEdit;
   if(!isNaN(val)&&val>=0){
-    // Calculate default
-    let def=0;
-    if(g.type==='pocket'){const p=S.pockets.find(x=>x.id===g.id);def=(p?p.monthly||0:0)*pocketMultForMonth(g.month);}
-    else if(g.type==='income'){const inc=S.incomes.find(x=>x.id===g.id);if(inc)def=(inc.isSalary&&inc.hasDouble&&inc.doubleMonths&&inc.doubleMonths.includes(g.month))?inc.amount*2:inc.amount;}
-    else if(g.type==='expense'){const exp=S.expenses.find(x=>x.id===g.id);def=exp?exp.amount:0;}
-    const ovKey=(g.type==='pocket'?'pocket-'+g.id:g.type+'-'+g.id)+'-'+g.month;
+    var def=0;
+    if(g.type==='pocket'){var p=S.pockets.find(function(x){return x.id===g.id;});def=(p?p.monthly||0:0)*pocketMultForMonth(g.month);}
+    else if(g.type==='income'){var inc=S.incomes.find(function(x){return x.id===g.id;});if(inc)def=(inc.isSalary&&inc.hasDouble&&inc.doubleMonths&&inc.doubleMonths.includes(g.month))?inc.amount*2:inc.amount;}
+    else if(g.type==='expense'){var exp=S.expenses.find(function(x){return x.id===g.id;});def=exp?exp.amount:0;}
+    var ovKey=(g.type==='pocket'?'pocket-'+g.id:g.type+'-'+g.id)+'-'+g.month;
     if(Math.abs(val-def)>0.001)S.overrides[ovKey]=val;
     else delete S.overrides[ovKey];
     save();
   }
   window._gEdit=null;
+  closeModal('mEditAmt');
   renderGestion();
   renderMensual();
   renderDashboard();
 }
-function cancelGEdit(){window._gEdit=null;renderGestion();}
+function cancelGEdit(){window._gEdit=null;closeModal('mEditAmt');}
 
 // ─── NOTAS ───────────────────────────────────────────────────────────────────
 let editingNotaId=null;
@@ -1894,6 +1907,8 @@ renderDashboard();
 if(Notification&&Notification.permission==='granted'&&(S.notifDay||S.notifTime))scheduleNotif();
 
 initDelegation();
+document.getElementById('mEditAmtSave').addEventListener('click',saveGEdit);
+document.getElementById('mEditAmtCancel').addEventListener('click',cancelGEdit);
 // FAB buttons - use addEventListener to work in Safari mobile
 document.getElementById('fabIncome').addEventListener('click',function(){openTx('income');closeFab();});
 document.getElementById('fabExpense').addEventListener('click',function(){openTx('expense');closeFab();});
