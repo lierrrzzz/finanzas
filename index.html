@@ -1255,10 +1255,6 @@ function renderMensual(){window._ma=[];
   S.transactions.filter(t=>t.type==='expense'&&!t.statusKey&&t.date&&t.date.startsWith(ms)).forEach(t=>h+=manualItem(t,'mensual'));
 
   document.getElementById('mensualContent').innerHTML=h;
-  document.getElementById('mensualContent').querySelectorAll('[data-ma]').forEach(function(el){
-    var idx=parseInt(el.getAttribute('data-ma'));
-    el.addEventListener('click',function(){_ma_call(idx);});
-  });
 }
 
 // ─── GESTIONAR ────────────────────────────────────────────────────────────────
@@ -1325,21 +1321,6 @@ function renderGestion(){window._ma=[];window._gActions=[];window._gEdit=null;
   S.transactions.filter(t=>t.type==='expense'&&!t.statusKey&&t.date&&t.date.startsWith(ms)).forEach(t=>h+=manualItemEditable(t,'gestion'));
 
   document.getElementById('gestionContent').innerHTML=h;
-  // Attach ALL event listeners after render (Safari mobile fix)
-  var saveBtn=document.getElementById('gSaveBtn');
-  var cancelBtn=document.getElementById('gCancelBtn');
-  if(saveBtn)saveBtn.addEventListener('click',saveGEdit);
-  if(cancelBtn)cancelBtn.addEventListener('click',cancelGEdit);
-  // Attach edit pencil buttons via _gActions
-  document.getElementById('gestionContent').querySelectorAll('[data-ga]').forEach(function(btn){
-    var idx=parseInt(btn.getAttribute('data-ga'));
-    btn.addEventListener('click',function(){_ga_call(idx);});
-  });
-  // Attach tick buttons via _ma
-  document.getElementById('gestionContent').querySelectorAll('[data-ma]').forEach(function(el){
-    var idx=parseInt(el.getAttribute('data-ma'));
-    el.addEventListener('click',function(){_ma_call(idx);});
-  });
 }
 
 // ─── HISTORIAL ────────────────────────────────────────────────────────────────
@@ -1884,11 +1865,35 @@ function importCSV(e){
   r.readAsText(file);e.target.value='';
 }
 
+// ─── EVENT DELEGATION ────────────────────────────────────────────────────────
+// Single delegated listener per container - works reliably in Safari mobile
+function initDelegation(){
+  // Mensual container
+  var mc=document.getElementById('mensualContent');
+  if(mc)mc.addEventListener('click',function(e){
+    var el=e.target.closest('[data-ma]');
+    if(el){var idx=parseInt(el.getAttribute('data-ma'));_ma_call(idx);}
+  });
+  // Gestion container
+  var gc=document.getElementById('gestionContent');
+  if(gc)gc.addEventListener('click',function(e){
+    var el=e.target.closest('[data-ma]');
+    if(el){var idx=parseInt(el.getAttribute('data-ma'));_ma_call(idx);}
+    var el2=e.target.closest('[data-ga]');
+    if(el2){var idx2=parseInt(el2.getAttribute('data-ga'));_ga_call(idx2);}
+    var el3=e.target.closest('#gSaveBtn');
+    if(el3)saveGEdit();
+    var el4=e.target.closest('#gCancelBtn');
+    if(el4)cancelGEdit();
+  });
+}
+
 // ─── INIT ────────────────────────────────────────────────────────────────────
 if(S.theme==='dark')document.documentElement.setAttribute('data-theme','dark');
 renderDashboard();
 if(Notification&&Notification.permission==='granted'&&(S.notifDay||S.notifTime))scheduleNotif();
 
+initDelegation();
 // FAB buttons - use addEventListener to work in Safari mobile
 document.getElementById('fabIncome').addEventListener('click',function(){openTx('income');closeFab();});
 document.getElementById('fabExpense').addEventListener('click',function(){openTx('expense');closeFab();});
