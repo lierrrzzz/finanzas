@@ -607,14 +607,18 @@ input,select{font-family:'Inter',sans-serif;}
       </div>
       <div class="settings-row" id="notifDayRow" style="display:none">
         <div><div class="settings-row-label">Día</div></div>
-        <select class="fi" id="notifDay" onchange="saveNotif()" style="width:auto;padding:8px 12px;">
+        <select class="fi" id="notifDay" style="width:auto;padding:8px 12px;">
           <option value="1">Lunes</option><option value="2">Martes</option><option value="3">Miércoles</option>
           <option value="4">Jueves</option><option value="5">Viernes</option><option value="6">Sábado</option><option value="0">Domingo</option>
         </select>
       </div>
       <div class="settings-row" id="notifTimeRow" style="display:none">
         <div><div class="settings-row-label">Hora</div></div>
-        <input type="time" class="fi" id="notifTime" value="09:00" onchange="saveNotif()" style="width:auto;padding:8px 12px;">
+        <input type="time" class="fi" id="notifTime" value="09:00" style="width:auto;padding:8px 12px;">
+      </div>
+      <div class="settings-row" id="notifSaveRow" style="display:none">
+        <div><div class="settings-row-label">Guardar configuración</div><div class="settings-row-sub" id="notifSavedLabel"></div></div>
+        <button class="action-btn" id="notifSaveBtn" style="background:var(--green-light);color:var(--green);">💾 Guardar</button>
       </div>
     </div>
   </div>
@@ -1339,15 +1343,22 @@ function renderGestion(){window._ma=[];window._gActions=[];window._gEdit=null;wi
 }
 
 // ─── HISTORIAL ────────────────────────────────────────────────────────────────
-let histFilter='hoy';
+let histFilter='hoy';let histTypeFilter='all';
 let editingTxId=null;
 
 function renderHistorial(){
   const filters=[{id:'hoy',label:'Hoy'},{id:'semana',label:'Esta semana'},{id:'mes',label:'Este mes'},{id:'3m',label:'Últ. 3 meses'},{id:'6m',label:'Últ. 6 meses'},{id:'año',label:'Este año'}];
-  document.getElementById('histFilters').innerHTML=filters.map(f=>'<button class="fchip'+(histFilter===f.id?' active':'')+'" onclick="setHistFilter(\''+f.id+'\')">'+f.label+'</button>').join('');
+  document.getElementById('histFilters').innerHTML=
+    filters.map(function(f){return '<button class="fchip'+(histFilter===f.id?' active':'')+'" data-hf="'+f.id+'">'+f.label+'</button>';}).join('')
+    +'<span style="width:1px;height:20px;background:var(--border);flex-shrink:0;margin:0 4px;display:inline-block;align-self:center;"></span>'
+    +[{id:'all',label:'Todo'},{id:'income',label:'↑ Ingresos'},{id:'transfer',label:'⇄ Transfers'},{id:'expense',label:'↓ Gastos'}].map(function(f){
+      var col=f.id==='income'?'var(--green)':f.id==='transfer'?'var(--accent)':f.id==='expense'?'var(--red)':'var(--text)';
+      var active=histTypeFilter===f.id;
+      return '<button class="fchip'+(active?' active':'')+'" data-htf="'+f.id+'" style="'+(active?'':'color:'+col+';border-color:'+col+';')+'">'+(f.label)+'</button>';
+    }).join('')
 
   const now=new Date();
-  let txs=S.transactions.filter(t=>{
+  let txs=S.transactions.filter(t=>histTypeFilter==='all'||t.type===histTypeFilter).filter(t=>{
     if(!t.date)return false;
     const d=new Date(t.date);
     if(histFilter==='hoy')return t.date===today();
@@ -1381,6 +1392,7 @@ function renderHistorial(){
 }
 
 function setHistFilter(f){histFilter=f;renderHistorial();}
+function setHistTypeFilter(f){histTypeFilter=f;renderHistorial();}
 
 function openEditTx(id){
   const t=S.transactions.find(x=>x.id===id);
@@ -1696,6 +1708,7 @@ function renderNotasList(){
       +'<div class="nota-card-title">'+(n.titulo||'Sin título')+'</div>'
       +(n.capital?'<div class="nota-card-capital">Capital esperado: '+fmt(n.capital)+'</div>':'')
       +(pocketPills?'<div class="nota-card-pockets">'+pocketPills+'</div>':'')
+      +(n.capital?(function(){var totalPockets=(n.pockets||[]).reduce(function(s,pp){return s+pp.amount;},0);var disp=n.capital-totalPockets;return '<div style="font-size:13px;font-weight:700;color:'+(disp>=0?'var(--green)':'var(--red)')+';">Capital disponible: '+fmt(disp)+'</div>';}()):'')
       +(n.texto?'<div class="nota-card-text">'+n.texto+'</div>':'')
       +'<div class="nota-card-date">'+(n.date||'')+'</div>'
       +'<div class="nota-card-actions">'
@@ -1787,6 +1800,19 @@ function renderAjustes(){
   document.getElementById('themeDark').className='theme-btn'+(S.theme==='dark'?' active':'');
   const sdi=document.getElementById('startDateInput');
   if(sdi&&S.startDate)sdi.value=S.startDate;
+  // Show notif config if already set
+  if(S.notifDay||S.notifTime){
+    ['notifDayRow','notifTimeRow','notifSaveRow'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='flex';});
+    var nd=document.getElementById('notifDay');var nt=document.getElementById('notifTime');
+    if(nd&&S.notifDay)nd.value=S.notifDay;
+    if(nt&&S.notifTime)nt.value=S.notifTime;
+    var days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    var lbl=document.getElementById('notifSavedLabel');
+    if(lbl&&S.notifDay&&S.notifTime)lbl.textContent='Configurado: cada '+days[parseInt(S.notifDay)]+' a las '+S.notifTime;
+  }
+  // Attach notif save button
+  var nsb=document.getElementById('notifSaveBtn');
+  if(nsb){nsb.replaceWith(nsb.cloneNode(true));document.getElementById('notifSaveBtn').addEventListener('click',function(){saveNotif();var lbl=document.getElementById('notifSavedLabel');var days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];if(lbl)lbl.textContent='Configurado: cada '+days[parseInt(S.notifDay||'1')]+' a las '+(S.notifTime||'09:00');var btn=document.getElementById('notifSaveBtn');if(btn){btn.textContent='✓ Guardado';setTimeout(function(){btn.textContent='💾 Guardar';},1500);}});}
   const row=document.getElementById('lastImportRow');
   const label=document.getElementById('lastImportDate');
   if(S.lastImport&&row&&label){
@@ -1802,13 +1828,18 @@ function requestNotif(){
   if(!('Notification'in window)){alert('Tu navegador no soporta notificaciones.');return;}
   Notification.requestPermission().then(function(p){
     if(p==='granted'){
-      document.getElementById('notifDayRow').style.display='flex';
-      document.getElementById('notifTimeRow').style.display='flex';
+      ['notifDayRow','notifTimeRow','notifSaveRow'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='flex';});
       scheduleNotif();
     } else alert('Permiso denegado. Actívalo en los ajustes del dispositivo.');
   });
 }
-function saveNotif(){S.notifDay=document.getElementById('notifDay').value;S.notifTime=document.getElementById('notifTime').value;save();scheduleNotif();}
+function saveNotif(){
+  var nd=document.getElementById('notifDay');
+  var nt=document.getElementById('notifTime');
+  S.notifDay=nd?nd.value:'1';
+  S.notifTime=nt?nt.value:'09:00';
+  save();scheduleNotif();
+}
 function scheduleNotif(){
   if(window._ni)clearInterval(window._ni);
   if(Notification.permission!=='granted')return;
@@ -1890,6 +1921,16 @@ function importCSV(e){
 // ─── EVENT DELEGATION ────────────────────────────────────────────────────────
 // Single delegated listener per container - works reliably in Safari mobile
 function initDelegation(){
+  // Historial filters
+  var hf=document.getElementById('histFilters');
+  if(hf){
+    hf.addEventListener('click',function(e){
+      var el=e.target.closest('[data-hf]');
+      if(el){histFilter=el.getAttribute('data-hf');renderHistorial();return;}
+      var el2=e.target.closest('[data-htf]');
+      if(el2){histTypeFilter=el2.getAttribute('data-htf');renderHistorial();}
+    });
+  }
   // Mensual container
   var mc=document.getElementById('mensualContent');
   if(mc)mc.addEventListener('click',function(e){
