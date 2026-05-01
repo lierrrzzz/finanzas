@@ -955,25 +955,23 @@ function pocketMultForMonth(m){
 
 // ─── POCKET BALANCE ───────────────────────────────────────────────────────────
 function pocketBalance(p){
-  // Saldo inicial ya incluye todo lo anterior.
-  // Sumamos el mes actual si está marcado.
   let bal=p.initial||0;
-  const key=nowY()+'-'+nowM()+'-pocket-'+p.id;
-  if(S.status[key]){
-    const ov=S.overrides['pocket-'+p.id+'-'+nowM()];
-    bal+=(ov!==undefined?ov:(p.monthly||0))*pocketMultForMonth(nowM());
+  const y=nowY();
+  // Count ALL checked months (past and current)
+  for(var m=0;m<12;m++){
+    var key=y+'-'+m+'-pocket-'+p.id;
+    if(S.status[key]){
+      var ov=S.overrides['pocket-'+p.id+'-'+m];
+      bal+=(ov!==undefined?ov:(p.monthly||0))*pocketMultForMonth(m);
+    }
   }
   // Subtract manual expenses charged to this pocket (paid=true)
   S.transactions.forEach(function(t){
-    if(t.type==='expense'&&t.pocket===p.id&&t.paid===true){
-      bal-=t.amount;
-    }
+    if(t.type==='expense'&&t.pocket===p.id&&t.paid===true){bal-=t.amount;}
   });
   // Subtract transfer transactions FROM this pocket
   S.transactions.forEach(function(t){
-    if(t.type==='transfer'&&t.fromPocket===p.id&&t.paid===true){
-      bal-=t.amount;
-    }
+    if(t.type==='transfer'&&t.fromPocket===p.id&&t.paid===true){bal-=t.amount;}
   });
   return bal;
 }
@@ -981,12 +979,14 @@ function pocketBalance(p){
 function patrimonio(){return S.pockets.reduce((s,p)=>s+pocketBalance(p),0);}
 
 function prevision2026(){
-  const m=nowM();
-  let total=patrimonio();
-  S.pockets.forEach(p=>{
-    const key=nowY()+'-'+m+'-pocket-'+p.id;
-    if(!S.status[key]){const ov=S.overrides['pocket-'+p.id+'-'+m];total+=(ov!==undefined?ov:(p.monthly||0))*pocketMultForMonth(m);}
-    for(let i=m+1;i<12;i++){const ov2=S.overrides['pocket-'+p.id+'-'+i];total+=(ov2!==undefined?ov2:(p.monthly||0))*pocketMultForMonth(i);}
+  var m=nowM();
+  var total=patrimonio();
+  S.pockets.forEach(function(p){
+    // Add unchecked current month
+    var keyC=nowY()+'-'+m+'-pocket-'+p.id;
+    if(!S.status[keyC]){var ov=S.overrides['pocket-'+p.id+'-'+m];total+=(ov!==undefined?ov:(p.monthly||0))*pocketMultForMonth(m);}
+    // Add future months
+    for(var i=m+1;i<12;i++){var ov2=S.overrides['pocket-'+p.id+'-'+i];total+=(ov2!==undefined?ov2:(p.monthly||0))*pocketMultForMonth(i);}
   });
   return total;
 }
