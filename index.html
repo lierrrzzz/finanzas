@@ -1288,7 +1288,7 @@ function renderGestion(){window._ma=[];window._gActions=[];window._gEdit=null;
     const isEditing=window._gEdit&&window._gEdit.type==='income'&&window._gEdit.id===inc.id&&window._gEdit.month===m;
     const amtHtml=isEditing
       ?'<div class="g-inline-edit"><input class="g-inline-input" id="gEditInput" type="number" value="'+amt+'" step="0.01" min="0"><button class="g-save-btn" id="gSaveBtn">OK</button><button class="g-edit-btn" id="gCancelBtn">✕</button></div>'
-      :(function(){var gi=window._gActions.length;window._gActions.push({type:'income',id:inc.id,month:m,amt:amt});return '<div class="g-inline-edit"><span style="color:'+(hasOv?'var(--purple)':'var(--green)')+'">+'+fmt(amt)+'</span>'+(phase!=='past'?'<button class="g-edit-btn" onclick="_ga_call('+gi+')">✏️</button>':'')+'</div>';})();
+      :(function(){var gi=window._gActions.length;window._gActions.push({type:'income',id:inc.id,month:m,amt:amt});return '<div class="g-inline-edit"><span style="color:'+(hasOv?'var(--purple)':'var(--green)')+'">+'+fmt(amt)+'</span>'+(phase!=='past'?'<button class="g-edit-btn" data-ga="'+gi+'">✏️</button>':'')+'</div>';})();
     h+=mItem(phase,key,'gestion',(inc.emoji||'💼')+' '+inc.name,'Ingreso · Día '+(inc.day||1)+(hasOv?' · ✎':''),amtHtml);
   });
   S.transactions.filter(t=>t.type==='income'&&!t.statusKey&&t.date&&t.date.startsWith(ms)).forEach(t=>h+=manualItemEditable(t,'gestion'));
@@ -1302,7 +1302,7 @@ function renderGestion(){window._ma=[];window._gActions=[];window._gEdit=null;
     const isEditing=window._gEdit&&window._gEdit.type==='pocket'&&window._gEdit.id===p.id&&window._gEdit.month===m;
     const amtHtml=isEditing
       ?'<div class="g-inline-edit"><input class="g-inline-input" id="gEditInput" type="number" value="'+amt+'" step="0.01" min="0"><button class="g-save-btn" id="gSaveBtn">OK</button><button class="g-edit-btn" id="gCancelBtn">✕</button></div>'
-      :(function(){var gi=window._gActions.length;window._gActions.push({type:'pocket',id:p.id,month:m,amt:amt});return '<div class="g-inline-edit"><span style="color:'+(hasOv?'var(--purple)':'var(--accent)')+'">'+fmt(amt)+'</span>'+(phase!=='past'?'<button class="g-edit-btn" onclick="_ga_call('+gi+')">✏️</button>':'')+'</div>';})();
+      :(function(){var gi=window._gActions.length;window._gActions.push({type:'pocket',id:p.id,month:m,amt:amt});return '<div class="g-inline-edit"><span style="color:'+(hasOv?'var(--purple)':'var(--accent)')+'">'+fmt(amt)+'</span>'+(phase!=='past'?'<button class="g-edit-btn" data-ga="'+gi+'">✏️</button>':'')+'</div>';})();
     h+=mItem(phase,key,'gestion',p.emoji+' '+p.name,'Transfer pocket'+(hasOv?' · ✎':''),amtHtml);
   });
   S.transactions.filter(t=>t.type==='transfer'&&!t.statusKey&&t.date&&t.date.startsWith(ms)).forEach(t=>h+=manualItemEditable(t,'gestion'));
@@ -1315,7 +1315,7 @@ function renderGestion(){window._ma=[];window._gActions=[];window._gEdit=null;
     const isEditing=window._gEdit&&window._gEdit.type==='expense'&&window._gEdit.id===exp.id&&window._gEdit.month===m;
     const amtHtml=isEditing
       ?'<div class="g-inline-edit"><input class="g-inline-input" id="gEditInput" type="number" value="'+amtE+'" step="0.01" min="0"><button class="g-save-btn" id="gSaveBtn">OK</button><button class="g-edit-btn" id="gCancelBtn">✕</button></div>'
-      :(function(){var gi=window._gActions.length;window._gActions.push({type:'expense',id:exp.id,month:m,amt:amtE});return '<div class="g-inline-edit"><span style="color:'+(hasOvE?'var(--purple)':'var(--red)')+'">−'+fmt(amtE)+'</span>'+(phase!=='past'?'<button class="g-edit-btn" onclick="_ga_call('+gi+')">✏️</button>':'')+'</div>';})();
+      :(function(){var gi=window._gActions.length;window._gActions.push({type:'expense',id:exp.id,month:m,amt:amtE});return '<div class="g-inline-edit"><span style="color:'+(hasOvE?'var(--purple)':'var(--red)')+'">−'+fmt(amtE)+'</span>'+(phase!=='past'?'<button class="g-edit-btn" data-ga="'+gi+'">✏️</button>':'')+'</div>';})();
     h+=mItem(phase,key,'gestion',(exp.emoji||'📦')+' '+exp.name,'Gasto · Día '+(exp.day||1)+(hasOvE?' · ✎':''),amtHtml);
   });
   S.transactions.filter(t=>t.type==='expense'&&!t.statusKey&&t.date&&t.date.startsWith(ms)).forEach(t=>h+=manualItemEditable(t,'gestion'));
