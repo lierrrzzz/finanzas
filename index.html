@@ -546,6 +546,15 @@ input,select{font-family:'Inter',sans-serif;}
     </div>
   </div>
   <div class="settings-section" style="margin-top:14px;">
+    <div class="settings-section-title">Inicio de la app</div>
+    <div class="settings-item">
+      <div class="settings-row">
+        <div><div class="settings-row-label">Fecha de inicio</div><div class="settings-row-sub">Los meses anteriores aparecerán sin datos</div></div>
+        <input type="date" class="fi" id="startDateInput" onchange="saveStartDate()" style="width:auto;padding:8px 12px;font-size:13px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);">
+      </div>
+    </div>
+  </div>
+  <div class="settings-section" style="margin-top:14px;">
     <div class="settings-section-title">Datos</div>
     <div class="settings-item">
       <div class="settings-row">
@@ -957,8 +966,9 @@ function pocketMultForMonth(m){
 function pocketBalance(p){
   let bal=p.initial||0;
   const y=nowY();
-  // Count ALL checked months (past and current)
+  // Count ALL checked months on or after start date
   for(var m=0;m<12;m++){
+    if(isBeforeStart(y,m))continue;
     var key=y+'-'+m+'-pocket-'+p.id;
     if(S.status[key]){
       var ov=S.overrides['pocket-'+p.id+'-'+m];
@@ -1144,6 +1154,13 @@ function renderMensual(){window._ma=[];
   document.getElementById('mensualLabel').textContent=MES[m]+' '+y;
   const isToday=(y===nowY()&&m===nowM());
   document.getElementById('mensualTodayBtn').style.display=isToday?'none':'block';
+
+  // Check if before app start date
+  if(isBeforeStart(y,m)){
+    document.getElementById('mensualContent').innerHTML='<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">Sin datos — la app no estaba en uso este mes.</div></div>';
+    return;
+  }
+
   const phase=getMonthPhase(y,m);
   const ms=monthStr(y,m);
   let h='';
@@ -1217,6 +1234,12 @@ function renderGestion(){window._ma=[];window._gActions=[];window._gEdit=null;
   document.getElementById('gestionLabel').textContent=MES[m]+' '+y;
   const isToday=(y===nowY()&&m===nowM());
   document.getElementById('gestionTodayBtn').style.display=isToday?'none':'block';
+
+  if(isBeforeStart(y,m)){
+    document.getElementById('gestionContent').innerHTML='<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">Sin datos — la app no estaba en uso este mes.</div></div>';
+    return;
+  }
+
   const phase=getMonthPhase(y,m);
   const ms=monthStr(y,m);
   let h='<div style="padding:10px 20px 4px;font-size:12px;color:var(--muted);">Gestiona el estado de los movimientos de este mes.</div>';
@@ -1499,7 +1522,31 @@ function togglePrevEdit(){
   renderPrevision();
 }
 
-// ─── GESTIONAR EDIT ──────────────────────────────────────────────────────────
+// ─── START DATE ───────────────────────────────────────────────────────────────
+function saveStartDate(){
+  const val=document.getElementById('startDateInput').value;
+  S.startDate=val||null;
+  save();
+  renderMensual();
+  renderGestion();
+  renderDashboard();
+}
+
+function isBeforeStart(y,m){
+  if(!S.startDate)return false;
+  const start=new Date(S.startDate);
+  const startY=start.getFullYear();
+  const startM=start.getMonth();
+  return y<startY||(y===startY&&m<startM);
+}
+
+function isSamePeriod(y,m){
+  // Returns true if the month/year is on or after startDate
+  if(!S.startDate)return true;
+  return !isBeforeStart(y,m);
+}
+
+// ─── GESTIONAR EDIT ───────────────────────────────────────────────────────────
 function _ga_call(i){if(window._gActions&&window._gActions[i]){var a=window._gActions[i];openGEdit(a.type,a.id,a.month,a.amt);}}
 function openGEdit(type,id,month,currentAmt){
   window._gEdit={type:type,id:id,month:month};
@@ -1572,6 +1619,8 @@ function saveNotas(){
 function renderAjustes(){
   document.getElementById('themeLight').className='theme-btn'+(S.theme==='light'?' active':'');
   document.getElementById('themeDark').className='theme-btn'+(S.theme==='dark'?' active':'');
+  const sdi=document.getElementById('startDateInput');
+  if(sdi&&S.startDate)sdi.value=S.startDate;
   const row=document.getElementById('lastImportRow');
   const label=document.getElementById('lastImportDate');
   if(S.lastImport&&row&&label){
